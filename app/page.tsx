@@ -1,59 +1,28 @@
 'use client'
-//Change use client later when creating login route
 import { useEffect, useState } from 'react';
 
 export default function HomePage() {
-  const axios = require('axios');
   const currentURL = window.location.search;
   const searchParams = new URLSearchParams(currentURL);
 
-  let [code, setCode] = useState<String | null>()
+  let [accessToken, setAccessToken] = useState<String | null>();
+  let [refreshToken, setRefreshToken] = useState<String | null>();
 
-  const redirect = (e:React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    axios.get('http://localhost:8080/token')
-    .then((res:any) => {
-      window.location.assign(res.request.responseURL);
-    })
-    .catch((err:any) => {
-      console.log(err);
-    })
+  const redirect = () => {
+    window.location.assign('http://localhost:3000/login')
   }
 
-  function authCheck(){
-    if (searchParams.has('code')){
-      let getCode = searchParams.get('code');
-      setCode(getCode);
+  const tokenCheck = () => {
+    if (searchParams.has('access_token') && searchParams.has('refresh_token')){
+      setAccessToken(searchParams.get('access_token'))
+      setRefreshToken(searchParams.get('refresh_token'))
+    } else {
+      redirect()
     }
-
-    if (searchParams.has('error')){
-      let error = searchParams.get('error');
-      console.log(error);
-    }
-  }
-
-
-  function authentication(){
-    axios.get('/auth',{
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: 'http://localhost:3000',
-    })
-    .then((res:any) => {
-      console.log(res);
-    })
-    .catch((err:any) => {
-      console.log(err);
-    })
   }
 
   useEffect(() => {
-    authCheck();
-
-    if (code){
-      authentication();
-    }
-
+    tokenCheck()
   }, [])
 
   return (
@@ -63,7 +32,9 @@ export default function HomePage() {
         <h2>Artist Name</h2>
         <p>Albums</p>
       </div>
-      <button onClick={redirect}>Click Here</button>
+      
+      <h2>access Token: {accessToken}</h2>
+      <h2>Refresh Token: {refreshToken}</h2>
     </div> 
   )
 }

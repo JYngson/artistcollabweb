@@ -6,7 +6,11 @@ module.exports = {
     "./app/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend:{
+      colors: {
+        spotifyGreen:'#1DB954',
+      },
+    }
   },
   plugins: [],
 }

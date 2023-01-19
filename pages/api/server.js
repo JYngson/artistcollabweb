@@ -5,7 +5,6 @@ const axios = require('axios')
 const app = express();
 const querystring = require('querystring');
 
-let redirect_uri = 'http://localhost:8080/auth';
 let clientID = process.env.CLIENT_ID.toString();
 let clientSecret = process.env.CLIENT_SECRET.toString();
 
@@ -13,9 +12,10 @@ app.get('/' , (req, res) =>{
   res.send('listening on port 8080')
 })
 
+//Allow CORS middleware
 app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "http://localhost:8080"); // update to match the domain you will make the request from
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header('Access-Control-Allow-Origin', 'http://localhost:8080');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
 
@@ -31,6 +31,8 @@ function randomStringGen(length) {
 
 let stateKey = 'spotify_auth_key'
 
+
+//Token request. Redirects back to spotify auth, then home.
 app.get('/token',(req, res) => {
   const state = randomStringGen(16)
   res.cookie(stateKey, state)
@@ -39,10 +41,11 @@ app.get('/token',(req, res) => {
     querystring.stringify({
       response_type: 'code',
       client_id: clientID,
-      redirect_uri: redirect_uri,
+      redirect_uri: 'http://localhost:8080/auth',
       state: state
   }));
 });
+
 
 app.get('/auth',(req, res) => {
   let code = req.query.code || null;
@@ -52,27 +55,25 @@ app.get('/auth',(req, res) => {
     url: 'https://accounts.spotify.com/api/token',
     data:
       querystring.stringify({
-        grant_type: "authorization_code",
+        grant_type: 'authorization_code',
         code: code,
-        redirect_uri: redirect_uri,
+        redirect_uri: 'http://localhost:8080/auth',
       }),
     headers: {
-      "Authorization": `Basic ${new Buffer.from(`${clientID}:${clientSecret}`).toString('base64')}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      'Authorization': `Basic ${new Buffer.from(`${clientID}:${clientSecret}`).toString('base64')}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
   })
     .then(response => {
       if (response.status == 200){
-        const { access_token, token_type } = response.data;
+        const { access_token } = response.data;
         const { refresh_token } = response.data
-
-        axios.get(`http://localhost:8080/tokenRefresh?refresh_token=${refresh_token}`)
-          .then(response => {
-            res.send(`<pre>${JSON.stringify(response.data, null, 2)}</pre>`)
+        res.redirect('http://localhost:3000/' +
+          querystring.stringify({
+            access_token: access_token,
+            refresh_token: refresh_token,
           })
-          .catch(err => {
-            res.send(err)
-          })
+        )
       } else {
         res.send(response)
       }
@@ -90,16 +91,16 @@ app.get('/tokenRefresh', (req, res) => {
     url: 'https://accounts.spotify.com/api/token',
     data:
       querystring.stringify({
-        grant_type: "refresh_token",
+        grant_type: 'refresh_token',
         refresh_token: refresh_token
       }),
     headers: {
-      "Authorization": `Basic ${new Buffer.from(`${clientID}:${clientSecret}`).toString('base64')}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      'Authorization': `Basic ${new Buffer.from(`${clientID}:${clientSecret}`).toString('base64')}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
   })
   .then(response => {
-    res.send(`${response} Refresh Endpoint Successful`)
+    res.send(response)
   })
   .catch(error => {
     res.send(error)
