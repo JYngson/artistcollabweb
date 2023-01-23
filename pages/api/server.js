@@ -68,7 +68,7 @@ app.get('/auth',(req, res) => {
       if (response.status == 200){
         const { access_token } = response.data;
         const { refresh_token } = response.data
-        res.redirect('http://localhost:3000/home?' +
+        res.redirect('http://localhost:3000/?' +
           querystring.stringify({
             accessToken: access_token,
             refreshToken: refresh_token,
