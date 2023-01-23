@@ -32,7 +32,7 @@ function randomStringGen(length) {
 let stateKey = 'spotify_auth_key'
 
 
-//Token request. Redirects back to spotify auth, then home.
+//Token request. Redirects back to spotify auth, then server/auth.
 app.get('/token',(req, res) => {
   const state = randomStringGen(16)
   res.cookie(stateKey, state)
@@ -46,7 +46,7 @@ app.get('/token',(req, res) => {
   }));
 });
 
-
+//Auth request. Redirects from server/auth to spotify auth, then to frontend/access_token
 app.get('/auth',(req, res) => {
   let code = req.query.code || null;
 
@@ -68,10 +68,10 @@ app.get('/auth',(req, res) => {
       if (response.status == 200){
         const { access_token } = response.data;
         const { refresh_token } = response.data
-        res.redirect('http://localhost:3000/' +
+        res.redirect('http://localhost:3000/home?' +
           querystring.stringify({
-            access_token: access_token,
-            refresh_token: refresh_token,
+            accessToken: access_token,
+            refreshToken: refresh_token,
           })
         )
       } else {
