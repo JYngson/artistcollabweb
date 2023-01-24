@@ -4,7 +4,6 @@ import { PacmanLoader } from 'react-spinners';
 import { useSearchParams } from 'next/navigation';
 
 
-
 export default function HomePage() {
   const searchParams = useSearchParams()
   let accessToken = searchParams.get('accessToken');
