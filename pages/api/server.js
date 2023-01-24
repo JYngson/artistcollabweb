@@ -84,15 +84,14 @@ app.get('/auth',(req, res) => {
 })
 
 app.get('/tokenRefresh', (req, res) => {
-  const {refresh_token} = req.query
-
+  const { refreshToken } = req.query
   axios({
     method: 'post',
     url: 'https://accounts.spotify.com/api/token',
     data:
       querystring.stringify({
         grant_type: 'refresh_token',
-        refresh_token: refresh_token
+        refresh_token: refreshToken
       }),
     headers: {
       'Authorization': `Basic ${new Buffer.from(`${clientID}:${clientSecret}`).toString('base64')}`,
@@ -100,10 +99,18 @@ app.get('/tokenRefresh', (req, res) => {
     },
   })
   .then(response => {
-    res.send(response)
+      const { access_token } = response.data;
+      const { refresh_token } = response.data;
+      res.redirect('http://localhost:3000/home?' +
+        querystring.stringify({
+          accessToken: access_token,
+          refreshToken: refresh_token,
+        })
+      )
+      // res.send(refreshToken);
   })
-  .catch(error => {
-    res.send(error)
+  .catch(err => {
+    res.send(err)
   })
 })
 

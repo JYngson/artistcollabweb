@@ -1,11 +1,24 @@
 'use client'
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function AccessToken() {
   const searchParams = useSearchParams()
+  let accessToken:string | null = searchParams.get('accessToken');
+  let refreshToken:string | null = searchParams.get('refreshToken');
+  let hours:number = 0
 
-  let accessToken = searchParams.get('accessToken');
-  let refreshToken = searchParams.get('refreshToken'); 
+  const refresh = () => {
+    window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
+    hours = 1
+  }
+
+  setTimeout(() => {
+    if (hours == 1){
+      window.location.assign('http://localhost:3000/login')
+    } else {
+      refresh()
+    }
+  }, 3300000);
 
   return (
     <div id='HomePage' className='w-screen h-screen bg-zinc-300'>
@@ -16,7 +29,7 @@ export default function AccessToken() {
       </div>
       
       <h2>access Token: {accessToken}</h2>
-      <h2>Refresh Token: {refreshToken}</h2>
+      <h2>refresh token: {refreshToken? refreshToken: 'nothing'}</h2>
     </div> 
   )
 }
