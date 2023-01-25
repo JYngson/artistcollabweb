@@ -1,11 +1,12 @@
 'use client'
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import Modal from 'react-modal';
 
 export default function AccessToken() {
   const searchParams = useSearchParams();
   const axios = require('axios')
-  const querystring = require('querystring');
+  const [modalOpen, setModalOpen] = useState<Boolean>(false);
 
   let accessToken:string | null = searchParams.get('accessToken');
   let refreshToken:string | null = searchParams.get('refreshToken');
@@ -18,30 +19,15 @@ export default function AccessToken() {
     hours = 1
   }
 
-  // curl --request GET \
-  // --url 'https://api.spotify.com/v1/search?type=album&include_external=audio' \
-  // --header 'Authorization: ' \
-  // --header 'Content-Type: application/json'
-  
+  const modalHandler = () => {
+    modalOpen === false ? setModalOpen(true) : setModalOpen(false)
+  }
 
   const search = () => {
     if (artist == null) {
       return
     }
-
-    // let data = {
-    //   q: artist,
-    //   type: 'artist',
-    //   limit: 5,
-    // }
-
-    // let config = {
-    //   headers: {
-    //     'Authorization': 'Bearer ' + accessToken,
-    //     'Content-Type': 'application/json'
-    //   }
-    // }
-
+    
     axios({
       method: 'get',
       url: 'https://api.spotify.com/v1/search',
@@ -56,7 +42,8 @@ export default function AccessToken() {
         'Content-Type': 'application/json'
       }
     }).then(response =>
-      setArtistList(response.data.artists.items)
+      setArtistList(response.data.artists.items),
+      modalHandler()
     ).catch(err => {
       console.log(err)
     });
@@ -76,7 +63,7 @@ export default function AccessToken() {
 
   return (
     <div id='HomePage' className='flex flex-col relative max-w-screen h-screen justify-center items-center bg-zinc-300 overflow-hidden'>
-      <div id='searchResults' className='flex max-w-screen overflow-scroll justify-center'>
+      {/* <div id='searchResults' className='flex max-w-screen overflow-scroll justify-center'>
         {
           artistList?.map(artist => {
             return (
@@ -88,9 +75,7 @@ export default function AccessToken() {
             )
           })
         }
-      </div>
-
-
+      </div> */}
       
       <h2 className='mb-2'>access Token: {accessToken? 'exists' : 'n/a'}</h2>
       <h2>refresh token: {refreshToken? 'exists ': 'n/a'}</h2>
@@ -102,7 +87,8 @@ export default function AccessToken() {
           name='artistSearch' 
           onChange={(e) => setArtist(e.target.value)}
           className='h-10 w-96 px-4 rounded-lg text-center mb-2' 
-          placeholder='Artist Name'/>
+          placeholder='Artist Name'
+        />
           <button 
             id='submitSearch'
             type='submit'
@@ -113,11 +99,37 @@ export default function AccessToken() {
       </div>
 
       <button 
-            id='test'
-            className='h-12 w-24 rounded-xl text-center bg-spotifyGreen' 
-            onClick={log}>
-              Log
+        id='test'
+        className='h-12 w-24 mb-4 rounded-xl text-center bg-spotifyGreen' 
+        onClick={log}>
+          Log
+      </button>
+
+      <button 
+        id='test'
+        className='h-12 w-24 rounded-xl text-center bg-spotifyGreen' 
+        onClick={modalHandler}>
+          Modal
+      </button>
+
+      <Modal isOpen = {modalOpen}>
+        <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center'>
+          <button className='h-12 w-24 rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
+            Close
           </button>
+          {
+            artistList?.map(artist => {
+              return (
+                <div key={artist.id} id='Card' className='w-full h-40 flex flex-col justify-center bg-blue-300 my-2'>
+                  <h1>Name : {artist.name}</h1>
+                  <h2>ID: {artist.id}</h2>
+                  <p>Followers: {artist.followers.total}</p>
+                </div>
+              )
+            })
+          }
+        </div>
+      </Modal>
     </div> 
   )
 }
