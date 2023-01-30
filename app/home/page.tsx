@@ -2,6 +2,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Modal from 'react-modal';
+import Image from 'next/image'
 
 export default function AccessToken() {
   const searchParams = useSearchParams();
@@ -12,12 +13,8 @@ export default function AccessToken() {
   let refreshToken:string | null = searchParams.get('refreshToken');
   let [artist, setArtist] = useState<String| null>();
   let [artistList, setArtistList] = useState<any[]>()
-  let hours:number = 0
+  let refreshTokenRedeemed:boolean = false
 
-  const refresh = () => {
-    window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
-    hours = 1
-  }
 
   const modalHandler = () => {
     modalOpen === false ? setModalOpen(true) : setModalOpen(false)
@@ -27,7 +24,6 @@ export default function AccessToken() {
     if (artist == null) {
       return
     }
-    
     axios({
       method: 'get',
       url: 'https://api.spotify.com/v1/search',
@@ -46,11 +42,25 @@ export default function AccessToken() {
       modalHandler()
     ).catch(err => {
       console.log(err)
-    });
+    })
+  }
+
+  const modalStyle = {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,1)'
+  }
+
+  const refresh = () => {
+    window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
+    refreshTokenRedeemed = true
   }
 
   setTimeout(() => {
-    if (hours == 1){
+    if (refreshTokenRedeemed == true){
       window.location.assign('http://localhost:3000/login')
     } else {
       refresh()
@@ -63,19 +73,6 @@ export default function AccessToken() {
 
   return (
     <div id='HomePage' className='flex flex-col relative max-w-screen h-screen justify-center items-center bg-zinc-300 overflow-hidden'>
-      {/* <div id='searchResults' className='flex max-w-screen overflow-scroll justify-center'>
-        {
-          artistList?.map(artist => {
-            return (
-              <div key={artist.id} id='Card' className='w-60 h-80 flex flex-col justify-center items-center bg-blue-300 mx-4'>
-                <h1>Name : {artist.name}</h1>
-                <h2>ID: {artist.id}</h2>
-                <p>Followers: {artist.followers.total}</p>
-              </div>
-            )
-          })
-        }
-      </div> */}
       
       <h2 className='mb-2'>access Token: {accessToken? 'exists' : 'n/a'}</h2>
       <h2>refresh token: {refreshToken? 'exists ': 'n/a'}</h2>
@@ -112,18 +109,27 @@ export default function AccessToken() {
           Modal
       </button>
 
-      <Modal isOpen = {modalOpen}>
-        <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center'>
-          <button className='h-12 w-24 rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
+      <Modal isOpen = {modalOpen} style={{modalStyle}}>
+        <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center bg-black'>
+          <button className='h-12 w-24 m-2 self-start rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
             Close
           </button>
           {
             artistList?.map(artist => {
               return (
-                <div key={artist.id} id='Card' className='w-full h-40 flex flex-col justify-center bg-blue-300 my-2'>
-                  <h1>Name : {artist.name}</h1>
-                  <h2>ID: {artist.id}</h2>
-                  <p>Followers: {artist.followers.total}</p>
+                <div key={artist.id} id='Card' className='w-11/12 h-40 flex items-center bg-spotifyGreen my-2 rounded-xl'>
+                  <Image
+                    src={artist.images[2].url}
+                    alt='spotify artist pic'
+                    className='rounded-3xl mx-6'
+                    width={100}
+                    height={100}
+                  />
+                  <div className='flex flex-col'>
+                    <h1>Name : {artist.name}</h1>
+                    <h2>ID: {artist.id}</h2>
+                    <p>Followers: {artist.followers.total}</p>
+                  </div>
                 </div>
               )
             })
