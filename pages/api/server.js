@@ -4,6 +4,7 @@ const express = require('express');
 const axios = require('axios')
 const app = express();
 const querystring = require('querystring');
+const cors = require('cors')
 
 let clientID = process.env.CLIENT_ID.toString();
 let clientSecret = process.env.CLIENT_SECRET.toString();
@@ -13,11 +14,7 @@ app.get('/' , (req, res) =>{
 })
 
 //Allow CORS middleware
-app.use(function(req, res, next) {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:8080');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
-});
+app.use(cors())
 
 function randomStringGen(length) {
   let result = '';
@@ -30,7 +27,6 @@ function randomStringGen(length) {
 }
 
 let stateKey = 'spotify_auth_key'
-
 
 //Token request. Redirects back to spotify auth, then server/auth.
 app.get('/token',(req, res) => {
@@ -83,6 +79,7 @@ app.get('/auth',(req, res) => {
     })
 })
 
+//Refresh token request.
 app.get('/tokenRefresh', (req, res) => {
   const { refreshToken } = req.query
   axios({
@@ -112,6 +109,10 @@ app.get('/tokenRefresh', (req, res) => {
   .catch(err => {
     res.send(err)
   })
+})
+
+app.get('/artist', (req, res) => {
+  res.send('excellent choice')
 })
 
 app.listen(8080, (err) => {

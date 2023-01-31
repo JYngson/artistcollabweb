@@ -16,6 +16,7 @@
     "@types/react": "18.0.26",
     "@types/react-dom": "18.0.10",
     "axios": "^1.2.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "dotenv-webpack": "^8.0.1",
     "eslint": "8.31.0",

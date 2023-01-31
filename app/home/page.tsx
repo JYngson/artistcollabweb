@@ -1,6 +1,6 @@
 'use client'
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import Image from 'next/image'
 
@@ -12,18 +12,35 @@ export default function AccessToken() {
   let accessToken:string | null = searchParams.get('accessToken');
   let refreshToken:string | null = searchParams.get('refreshToken');
   let [artist, setArtist] = useState<String| null>();
-  let [artistList, setArtistList] = useState<any[]>()
+  let [artistList, setArtistList] = useState<any[]>();
+  let [error, setError] = useState<any[] | null>();
   let refreshTokenRedeemed:boolean = false
 
+  const artistPageRedirect = (id:string) => {
+    axios({
+      method: 'get',
+      url: 'http://localhost:8080/artist',
+      withCredentials: false,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+      },
+      data:{
+        access_token: accessToken,
+        artistId: id
+      },
+    }) 
+
+    
+  }
 
   const modalHandler = () => {
     modalOpen === false ? setModalOpen(true) : setModalOpen(false)
   }
 
-  const search = () => {
-    if (artist == null) {
-      return
-    }
+  const artistSearch = () => {
+    setArtistList(undefined)
+
     axios({
       method: 'get',
       url: 'https://api.spotify.com/v1/search',
@@ -41,42 +58,57 @@ export default function AccessToken() {
       setArtistList(response.data.artists.items),
       modalHandler()
     ).catch(err => {
+      setError(err)
       console.log(err)
     })
   }
 
   const modalStyle = {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,1)'
+    overlay : {
+      backgroundColor: '#000000'
+    },
+    content: {
+      background: '#000000',
+      border: '2px solid #ccc',
+    }
   }
 
   const refresh = () => {
-    window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
-    refreshTokenRedeemed = true
-  }
-
-  setTimeout(() => {
-    if (refreshTokenRedeemed == true){
-      window.location.assign('http://localhost:3000/login')
-    } else {
-      refresh()
+    if (typeof window !== "undefined") {
+      window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
+      refreshTokenRedeemed = true
     }
-  }, 3300000);
+  }
 
   const log = () => {
     console.log(artistList)
   }
 
+  const roundToThousand = (followers:number) => {
+    let thousandCalc = Math.round(followers / 1000)
+    let millionCalc = Math.round(followers / 1000000)
+
+    if (followers < 1000){
+      return followers
+    } else if (followers > 1000000){
+      return `${millionCalc}m`
+    } else {
+      return `${thousandCalc}k`
+    }
+  }
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (refreshTokenRedeemed == true){
+        window.location.assign('http://localhost:3000/login')
+      } else {
+        refresh()
+      }
+    }, 3300000);
+  })
+
   return (
     <div id='HomePage' className='flex flex-col relative max-w-screen h-screen justify-center items-center bg-zinc-300 overflow-hidden'>
-      
-      <h2 className='mb-2'>access Token: {accessToken? 'exists' : 'n/a'}</h2>
-      <h2>refresh token: {refreshToken? 'exists ': 'n/a'}</h2>
-
       <div id='search' className='my-4 flex flex-col items-center'>
         <input 
           id='searchBar'
@@ -86,13 +118,13 @@ export default function AccessToken() {
           className='h-10 w-96 px-4 rounded-lg text-center mb-2' 
           placeholder='Artist Name'
         />
-          <button 
-            id='submitSearch'
-            type='submit'
-            className='h-12 w-24 rounded-xl text-center bg-spotifyGreen' 
-            onClick={search}>
-              Search
-          </button>
+        <button 
+          id='submitSearch'
+          type='submit'
+          className='h-12 w-24 rounded-xl text-center bg-spotifyGreen' 
+          onClick={artistSearch}>
+            Search
+        </button>
       </div>
 
       <button 
@@ -109,34 +141,42 @@ export default function AccessToken() {
           Modal
       </button>
 
-      <Modal isOpen = {modalOpen} style={{modalStyle}}>
+      <Modal isOpen = {modalOpen} style={modalStyle}>
         <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center bg-black'>
           <button className='h-12 w-24 m-2 self-start rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
             Close
           </button>
-          {
-            artistList?.map(artist => {
-              return (
-                <div key={artist.id} id='Card' className='w-11/12 h-40 flex items-center bg-spotifyGreen my-2 rounded-xl'>
-                  <Image
-                    src={artist.images[2].url}
-                    alt='spotify artist pic'
-                    className='rounded-3xl mx-6'
-                    width={100}
-                    height={100}
-                  />
-                  <div className='flex flex-col'>
-                    <h1>Name : {artist.name}</h1>
-                    <h2>ID: {artist.id}</h2>
-                    <p>Followers: {artist.followers.total}</p>
-                  </div>
-                </div>
-              )
-            })
+
+          { artistList? 
+              artistList.map(artist => {
+                return (
+                  <button 
+                    key={artist.id} 
+                    id='Card' 
+                    onClick={() => artistPageRedirect(artist.id)} 
+                    className='w-2/6 h-40 flex items-center bg-spotifyGreen my-2 rounded-xl hover:bg-white'
+                  >
+                    { artist.images &&
+                      <Image
+                        src={artist?.images[2]?.url}
+                        alt='spotify artist pic'
+                        className='rounded-3xl mx-6'
+                        width={100}
+                        height={100}
+                      />
+                    }
+                    <div className='flex flex-col w-full'>
+                      <h1 className='text-xl'>{artist.name}</h1>
+                      <p className='text-m'>Followers: {roundToThousand(artist.followers.total)}</p>
+                    </div>
+                  </button>
+                )
+              })
+              :
+            <h1 className='text-white'>No artists found under that name! ; - ; </h1>
           }
-        </div>
+        </div>      
       </Modal>
     </div> 
   )
 }
-
