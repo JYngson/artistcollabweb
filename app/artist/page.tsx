@@ -16,8 +16,10 @@ export default function Artist() {
   let [topGenres, setTopGenres] = useState<string[]>();
   let [spotifyLink, setSpotifyLink] = useState<string | null>();
   let [popularity, setPopularity] = useState<number>(0);
-  let [followers, setFollowers] = useState<number>();
+  let [followers, setFollowers] = useState<string>();
   let [profilePicture, setProfilePicture] = useState<string | null>();
+  let [artistAlbums, setArtistAlbums] = useState<any[]>();
+
 
   const getArtist = () => {
     axios({
@@ -34,11 +36,53 @@ export default function Artist() {
       setTopGenres(response.data.genres)
       setSpotifyLink(response.data.external_urls.spotify)
       setPopularity(response.data.popularity)
-      setFollowers(response.data.followers.total);
-      console.log(response)
+      followCountEdit(response.data.followers.total)
     }).catch(err => {
       console.log(err)
     })
+  }
+
+  const getAlbums = () => {
+    axios({
+      method: 'get',
+      url: `https://api.spotify.com/v1/artists/${id}/albums`,
+      withCredentials: false,
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      }
+    }).then(response => {
+      setArtistAlbums(response.data.items)
+      console.log(response.data.items)
+    }).catch(err => {
+      console.log(err)
+    })
+  }
+
+  const followCountEdit = (num:number) => {
+      let stringConvert = num.toString().split("")
+      if (num / 100000000 >= 1){
+        stringConvert.splice(3,0, ',')
+        stringConvert.splice(7,0, ',')
+        setFollowers(stringConvert.join(''))
+      } else if (num / 10000000 >=1){
+        stringConvert.splice(2,0,',')
+        stringConvert.splice(6,0, ',')
+        setFollowers(stringConvert.join(''))
+      } else if (num / 1000000 >=1){
+        stringConvert.splice(1,0,',')
+        stringConvert.splice(5,0,',')
+        setFollowers(stringConvert.join(''))
+      } else if (num / 100000 >=1){
+        stringConvert.splice(3,0,',')
+        setFollowers(stringConvert.join(''))
+      } else if (num / 10000>=1){
+        stringConvert.splice(2,0,',')
+        setFollowers(stringConvert.join(''))
+      } else if (num / 1000 >=1){
+        stringConvert.splice(1,0,',')
+        setFollowers(stringConvert.join(''))
+      }
   }
 
   const searchRedirect = () => {
@@ -50,12 +94,14 @@ export default function Artist() {
     
   }
 
+  
   useEffect(() => {
     getArtist()
+    getAlbums()
   }, [])
 
   return (
-    <div className='flex flex-col max-w-screen min-h-screen items-center justify-center overflow-scroll bg-gray-800'>
+    <div className='flex flex-col w-screen items-center justify-center bg-gray-800'>
       { 
        profilePicture &&
         <Image
@@ -72,7 +118,7 @@ export default function Artist() {
           {
             topGenres?.map(genre => {
               return(
-                <li className='text-white'> | {genre} | </li>
+                <li className='text-white hover:text-spotifyGreen'> | {genre} | </li>
               )
             })
           }
@@ -80,6 +126,34 @@ export default function Artist() {
       { spotifyLink && <a href={spotifyLink} className='mb-2 text-spotifyGreen'>Link to Spotify Page</a> }
       <p className='text-white'>Popularity - {popularity}</p>
       <p className='text-white'>Followers - {followers}</p>
+
+      <div id='albumlist' className='flex overflow-scroll w-screen space-x-8 p-12'>
+        {artistAlbums &&
+          artistAlbums.map(album => {
+            return(
+              <div key={album.id} className='flex flex-col items-center'>
+                { 
+                  album.images[1] &&
+                    <Image
+                      src={album.images[1].url}
+                      alt='spotify artist pic'
+                      className='mb-6 text-white'
+                      width={128}
+                      height={128}
+                  />
+                }
+                <div className='w-full'>
+                  <h1 className='mb-2'>{album.name}</h1>
+                  <p className='mb-2'>{album.type.toUpperCase()}</p>
+                  <p className='mb-2'>Released: {album.release_date}</p>
+                  <a href={album.href} className='text-spotifyGreen'>Link to Album</a>
+                </div>
+              </div>
+            )
+          })
+        }
+      </div>
+
       <button 
         onClick={searchRedirect} 
         className='h-12 w-24 m-2 rounded-xl text-center bg-spotifyGreen'>
