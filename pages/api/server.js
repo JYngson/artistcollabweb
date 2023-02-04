@@ -13,8 +13,15 @@ app.get('/' , (req, res) =>{
   res.send('listening on port 8080')
 })
 
-//Allow CORS middleware
+// Allow CORS middleware
 app.use(cors())
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 function randomStringGen(length) {
   let result = '';
@@ -111,12 +118,12 @@ app.get('/tokenRefresh', (req, res) => {
   })
 })
 
+//Get artist list from Spotify API
 app.get('/artist', (req, res) => {
-  res.send('excellent choice')
+  res.redirect('http://localhost:3000/artist')
 })
 
 app.listen(8080, (err) => {
   if (err) throw err
   console.log('listening on port 8080')
 })
-

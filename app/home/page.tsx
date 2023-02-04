@@ -1,5 +1,5 @@
 'use client'
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import Image from 'next/image'
@@ -13,25 +13,15 @@ export default function AccessToken() {
   let refreshToken:string | null = searchParams.get('refreshToken');
   let [artist, setArtist] = useState<String| null>();
   let [artistList, setArtistList] = useState<any[]>();
-  let [error, setError] = useState<any[] | null>();
+  let [modalMessage, setModalMessage] = useState<string>("Searching...")
   let refreshTokenRedeemed:boolean = false
 
   const artistPageRedirect = (id:string) => {
-    axios({
-      method: 'get',
-      url: 'http://localhost:8080/artist',
-      withCredentials: false,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-      },
-      data:{
-        access_token: accessToken,
-        artistId: id
-      },
-    }) 
-
-    
+    if (refreshToken){
+      window.location.assign(`http://localhost:3000/artist?id=${id}&accessToken=${accessToken}&refreshToken=${refreshToken}`)
+    } else {
+      window.location.assign(`http://localhost:3000/artist?id=${id}&accessToken=${accessToken}`)
+    }
   }
 
   const modalHandler = () => {
@@ -55,10 +45,13 @@ export default function AccessToken() {
         'Content-Type': 'application/json'
       }
     }).then(response =>
+      response.data.artists.items.length == 0 ? 
+      setModalMessage("No artist found under that name! ; - ;") 
+      :
       setArtistList(response.data.artists.items),
       modalHandler()
     ).catch(err => {
-      setError(err)
+
       console.log(err)
     })
   }
@@ -134,13 +127,6 @@ export default function AccessToken() {
           Log
       </button>
 
-      <button 
-        id='test'
-        className='h-12 w-24 rounded-xl text-center bg-spotifyGreen' 
-        onClick={modalHandler}>
-          Modal
-      </button>
-
       <Modal isOpen = {modalOpen} style={modalStyle}>
         <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center bg-black'>
           <button className='h-12 w-24 m-2 self-start rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
@@ -173,7 +159,7 @@ export default function AccessToken() {
                 )
               })
               :
-            <h1 className='text-white'>No artists found under that name! ; - ; </h1>
+            <h1 className='text-white'>{modalMessage}</h1>
           }
         </div>      
       </Modal>
