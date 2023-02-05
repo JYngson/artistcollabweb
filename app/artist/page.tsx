@@ -47,16 +47,65 @@ export default function Artist() {
       method: 'get',
       url: `https://api.spotify.com/v1/artists/${id}/albums`,
       withCredentials: false,
+      params: {
+        market: 'US'
+      },
       headers: {
         'Authorization': 'Bearer ' + accessToken,
         'Content-Type': 'application/json'
       }
     }).then(response => {
-      setArtistAlbums(response.data.items)
       console.log(response.data.items)
+      removeAlbumDuplicates(response.data.items)
     }).catch(err => {
       console.log(err)
     })
+  }
+
+  const removeAlbumDuplicates = (albums:any[]) => {
+    let albumList = new Map()
+
+    class Album {
+      id: string;
+      name: string
+      type: string;
+      image: string;
+      spotifyLink: string;
+      trackCount: number;
+      releaseDate: string;
+
+      constructor (id, name, type, image, spotifyLink, trackCount, releaseDate){
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.image = image;
+        this.spotifyLink = spotifyLink;
+        this.trackCount = trackCount;
+        this.releaseDate = releaseDate;
+      }
+    }
+
+    albums.forEach(album => {
+      if (!albumList.has(album.name)){
+        const mapKey:string = album.name.replace(/ /g, "_")
+        const newAlbum = new Album(
+          album.id, 
+          album.name, 
+          album.type, 
+          album.images[1], 
+          album.external_urls.spotify, 
+          album.total_tracks, 
+          album.release_date
+        )
+        albumList.set(mapKey, newAlbum)
+      }
+    })
+
+    let mapConvert = Array.from(albumList, function(mapAlbum) {
+      return {key: mapAlbum[0], value: mapAlbum[1]}
+    } )
+
+    setArtistAlbums(mapConvert)
   }
 
   const followCountEdit = (num:number) => {
@@ -93,12 +142,12 @@ export default function Artist() {
     }
     
   }
-
   
   useEffect(() => {
     getArtist()
     getAlbums()
   }, [])
+
 
   return (
     <div className='flex flex-col w-screen items-center justify-center bg-gray-800'>
@@ -107,7 +156,7 @@ export default function Artist() {
         <Image
           src={profilePicture}
           alt='spotify artist pic'
-          className='rounded-full mb-6 text-white'
+          className='rounded-full my-6 text-white'
           width={320}
           height={320}
         />
@@ -128,25 +177,26 @@ export default function Artist() {
       <p className='text-white'>Followers - {followers}</p>
 
       <div id='albumlist' className='flex overflow-scroll w-screen space-x-8 p-12'>
+
         {artistAlbums &&
           artistAlbums.map(album => {
             return(
-              <div key={album.id} className='flex flex-col items-center'>
+              <div key={album.key} className='flex flex-col items-center text-center shrink-0 w-56'>
                 { 
-                  album.images[1] &&
+                  album.value.image &&
                     <Image
-                      src={album.images[1].url}
+                      src={album.value.image.url}
                       alt='spotify artist pic'
                       className='mb-6 text-white'
                       width={128}
                       height={128}
                   />
                 }
-                <div className='w-full'>
-                  <h1 className='mb-2'>{album.name}</h1>
-                  <p className='mb-2'>{album.type.toUpperCase()}</p>
-                  <p className='mb-2'>Released: {album.release_date}</p>
-                  <a href={album.href} className='text-spotifyGreen'>Link to Album</a>
+                <div id='album' className='w-full text-white justify-between'>
+                  <h1 id='albumName' className='mb-2  text-clip'>{album.value.name}</h1>
+                  <p id='albumType' className='mb-2'>{album.value.type.toUpperCase()}</p>
+                  <p id='albumReleaseDate' className='mb-2'>Released: {album.value.releaseDate}</p>
+                  <a id='albumLink' href={album.value.spotifyLink} className='text-spotifyGreen'>Link to Album</a>
                 </div>
               </div>
             )
@@ -156,7 +206,7 @@ export default function Artist() {
 
       <button 
         onClick={searchRedirect} 
-        className='h-12 w-24 m-2 rounded-xl text-center bg-spotifyGreen'>
+        className='h-12 w-24 my-8 rounded-xl text-center bg-spotifyGreen'>
           Back
       </button>
     </div>
