@@ -18,7 +18,9 @@ export default function Artist() {
   let [popularity, setPopularity] = useState<number>(0);
   let [followers, setFollowers] = useState<string>();
   let [profilePicture, setProfilePicture] = useState<string | null>();
-  let [artistAlbums, setArtistAlbums] = useState<any[]>();
+  let [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
+  let [artistCollabs, setArtistCollabs] = useState<any[]>();
+  
 
 
   const getArtist = () => {
@@ -55,7 +57,6 @@ export default function Artist() {
         'Content-Type': 'application/json'
       }
     }).then(response => {
-      console.log(response.data.items)
       removeAlbumDuplicates(response.data.items)
     }).catch(err => {
       console.log(err)
@@ -73,8 +74,9 @@ export default function Artist() {
       spotifyLink: string;
       trackCount: number;
       releaseDate: string;
+      artistFeatures: Array<{name:string, count:number}>
 
-      constructor (id, name, type, image, spotifyLink, trackCount, releaseDate){
+      constructor (id, name, type, image, spotifyLink, trackCount, releaseDate, artistFeatures){
         this.id = id;
         this.name = name;
         this.type = type;
@@ -82,6 +84,7 @@ export default function Artist() {
         this.spotifyLink = spotifyLink;
         this.trackCount = trackCount;
         this.releaseDate = releaseDate;
+        this.artistFeatures = artistFeatures;
       }
     }
 
@@ -95,7 +98,8 @@ export default function Artist() {
           album.images[1], 
           album.external_urls.spotify, 
           album.total_tracks, 
-          album.release_date
+          album.release_date,
+          album.artists
         )
         albumList.set(mapKey, newAlbum)
       }
@@ -106,6 +110,55 @@ export default function Artist() {
     } )
 
     setArtistAlbums(mapConvert)
+    collabCount(artistAlbums)
+  }
+
+  const collabCount = (artistAlbums) => {
+    let collabList = new Map()
+    console.log(artistAlbums)
+
+    class CollabArtist {
+      id: string;
+      name: string
+      type: string;
+      spotifyLink: string;
+      collabCount = 1
+
+      constructor (id, name, type, spotifyLink){
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.spotifyLink = spotifyLink;
+      }
+    }
+
+    artistAlbums.forEach(album => {
+      // console.log(album)
+
+      album.value.artistFeatures.forEach(artist => {
+        const mapKey:string = artist.name.replace(/ /g, "_")
+        const newCollab = new CollabArtist(
+          artist.id, 
+          artist.name, 
+          artist.type, 
+          artist.spotifyLink
+        )
+        if (!collabList.has(mapKey)){
+          collabList.set(mapKey, newCollab)
+        } else if (collabList.has(mapKey)) {
+          let artist = collabList.get(mapKey)
+          artist.collabCount++
+        }
+      })
+    })
+
+    let mapConvert = Array.from(collabList, function(collaborator) {
+      return {key: collaborator[0], value: collaborator[1]}
+    } )
+
+    // console.log(collabList)
+    
+    setArtistCollabs(mapConvert)
   }
 
   const followCountEdit = (num:number) => {
@@ -143,10 +196,23 @@ export default function Artist() {
     
   }
   
+  const log = () => {
+    console.log(artistCollabs)
+  }
+
+
   useEffect(() => {
     getArtist()
     getAlbums()
   }, [])
+
+  useEffect(() => {
+    if (artistAlbums !== undefined){
+      collabCount(artistAlbums)
+    }
+  }, [artistAlbums])
+
+
 
 
   return (
@@ -165,9 +231,9 @@ export default function Artist() {
       <h2 className='text-white'>Top Genres:</h2>
         <ul className='flex flex-row mb-2'>
           {
-            topGenres?.map(genre => {
+            topGenres?.map((genre,index) => {
               return(
-                <li className='text-white hover:text-spotifyGreen'> | {genre} | </li>
+                <li key={index} className='text-white hover:text-spotifyGreen'> | {genre} | </li>
               )
             })
           }
@@ -175,6 +241,12 @@ export default function Artist() {
       { spotifyLink && <a href={spotifyLink} className='mb-2 text-spotifyGreen'>Link to Spotify Page</a> }
       <p className='text-white'>Popularity - {popularity}</p>
       <p className='text-white'>Followers - {followers}</p>
+
+      <button 
+        onClick={log} 
+        className='h-12 w-24 my-8 rounded-xl text-center bg-spotifyGreen'>
+          Log
+      </button>
 
       <div id='albumlist' className='flex overflow-scroll w-screen space-x-8 p-12'>
 
