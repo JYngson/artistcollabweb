@@ -3,6 +3,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import Image from 'next/image'
+import BG from '../../images/SearchBG.jpg'
 
 export default function AccessToken() {
   const searchParams = useSearchParams();
@@ -14,7 +15,6 @@ export default function AccessToken() {
   let [artist, setArtist] = useState<String| null>();
   let [artistList, setArtistList] = useState<any[]>();
   let [modalMessage, setModalMessage] = useState<string>("Searching...")
-  let refreshTokenRedeemed:boolean = false
 
   const artistPageRedirect = (id:string) => {
     if (refreshToken){
@@ -51,14 +51,22 @@ export default function AccessToken() {
       setArtistList(response.data.artists.items),
       modalHandler()
     ).catch(err => {
-
-      console.log(err)
+        if(err.status == 401){
+          if(err.message = 'The access token expired'){
+            if(refreshToken){
+              window.location.assign(`http://localhost:8080/tokenRefresh?${refreshToken}`)
+            } else {
+              window.location.assign('http://localhost:3000/login')
+            }
+          }
+        }
     })
   }
 
   const modalStyle = {
     overlay : {
-      backgroundColor: '#000000'
+      backgroundColor: '#000000',
+      zIndex: 100
     },
     content: {
       background: '#000000',
@@ -66,12 +74,6 @@ export default function AccessToken() {
     }
   }
 
-  const refresh = () => {
-    if (typeof window !== "undefined") {
-      window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
-      refreshTokenRedeemed = true
-    }
-  }
 
   const log = () => {
     console.log(artistList)
@@ -90,19 +92,15 @@ export default function AccessToken() {
     }
   }
 
-  useEffect(() => {
-    setTimeout(() => {
-      if (refreshTokenRedeemed == true){
-        window.location.assign('http://localhost:3000/login')
-      } else {
-        refresh()
-      }
-    }, 3300000);
-  })
 
   return (
-    <div id='HomePage' className='flex flex-col relative max-w-screen h-screen justify-center items-center bg-zinc-300 overflow-hidden'>
-      <div id='search' className='my-4 flex flex-col items-center'>
+    <div id='HomePage' className='flex flex-col relative max-w-screen h-screen justify-center items-center overflow-hidden bg-black'>
+      <Image
+        src={BG}
+        alt='background image'
+        className='absolute object-cover z-0 w-full h-full animate-fade-in'
+      />
+      <div id='search' className='my-4 flex flex-col w-5/12 h-2/6 justify-center items-center bg-zinc-800/[0.8] rounded-xl z-10'>
         <input 
           id='searchBar'
           type='search' 
@@ -119,13 +117,6 @@ export default function AccessToken() {
             Search
         </button>
       </div>
-
-      <button 
-        id='test'
-        className='h-12 w-24 mb-4 rounded-xl text-center bg-spotifyGreen' 
-        onClick={log}>
-          Log
-      </button>
 
       <Modal isOpen = {modalOpen} style={modalStyle}>
         <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center bg-black'>

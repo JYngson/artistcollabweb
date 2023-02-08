@@ -104,14 +104,11 @@ app.get('/tokenRefresh', (req, res) => {
   })
   .then(response => {
       const { access_token } = response.data;
-      const { refresh_token } = response.data;
       res.redirect('http://localhost:3000/home?' +
         querystring.stringify({
           accessToken: access_token,
-          refreshToken: refresh_token,
         })
       )
-      // res.send(refreshToken);
   })
   .catch(err => {
     res.send(err)
