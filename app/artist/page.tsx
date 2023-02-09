@@ -106,7 +106,6 @@ export default function Artist() {
 
   function getCollaboratorImages(artistList){
     artistList.forEach(artist => {
-      console.log(artist)
       let artistID = artist.value.id
       axios({
         method: 'get',
@@ -259,20 +258,17 @@ export default function Artist() {
   }
 
   useEffect(() => {
-    console.log('UE1')
     getArtist()
   }, [])
 
   useEffect(()=> {
     if (artistName){
-      console.log('UE2')
       getAlbums()
     }
   }, [artistName])
 
   useEffect(() => {
     if (artistAlbums !== undefined){
-      console.log('UE3')
       getCollaborators(artistAlbums)
     }
   }, [artistAlbums])
@@ -340,6 +336,31 @@ export default function Artist() {
                   <p id='albumReleaseDate' className='mb-2'>Released: {album.value.releaseDate}</p>
                   <a id='albumLink' href={album.value.spotifyLink} className='text-spotifyGreen'>Link to Album</a>
                 </div>
+              </div>
+            )
+          })
+        }
+      </div>
+
+      <div id='collablist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
+        <h1>Hello!</h1>
+        {
+          artistCollabs?.map(artist => {
+            // console.log(artist)
+            return (
+              <div key = {artist.value.id}>
+                { 
+                   artist?.value?.image?.url &&
+                    <Image
+                      src={artist.value.image.url}
+                      alt='spotify artist pic'
+                      className='rounded-full my-6 text-white'
+                      width={160}
+                      height={160}
+                    />
+                }
+                <h2>{artist.value.name}</h2>
+                <p>{artist.value.spotifyLink}</p>
               </div>
             )
           })
