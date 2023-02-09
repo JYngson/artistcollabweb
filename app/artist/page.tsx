@@ -20,11 +20,10 @@ export default function Artist() {
   let [profilePicture, setProfilePicture] = useState<string | null>();
   let [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
   let [artistCollabs, setArtistCollabs] = useState<any[]>();
-  
+  const collaborators = new Map()
 
-
-  async function getArtist ()  {
-    axios({
+  function getArtist (){
+    return axios({
       method: 'get',
       url: `https://api.spotify.com/v1/artists/${id}`,
       withCredentials: false,
@@ -32,14 +31,17 @@ export default function Artist() {
         'Authorization': 'Bearer ' + accessToken,
         'Content-Type': 'application/json'
       }
-    }).then(response => {
-      setArtistName(response.data.name)
-      setProfilePicture(response.data.images[1].url)
-      setTopGenres(response.data.genres)
-      setSpotifyLink(response.data.external_urls.spotify)
-      setPopularity(response.data.popularity)
-      followCountEdit(response.data.followers.total)
-    }).catch(err => {
+    })
+    .then(artist => {
+      setArtistName(artist.data.name)
+      setProfilePicture(artist.data.images[1].url)
+      setTopGenres(artist.data.genres)
+      setSpotifyLink(artist.data.external_urls.spotify)
+      setPopularity(artist.data.popularity)
+      followCountEdit(artist.data.followers.total)
+      return artist
+    })
+    .catch(err => {
       if(err.status == 401){
         if(err.message = 'The access token expired'){
           if(refreshToken){
@@ -48,11 +50,13 @@ export default function Artist() {
             window.location.assign('http://localhost:3000/login')
           }
         }
+      } else {
+        console.log(err)
       }
     })
   }
 
-  async function getAlbums(){
+  function getAlbums(){
     axios({
       method: 'get',
       url: `https://api.spotify.com/v1/artists/${id}/albums`,
@@ -64,16 +68,86 @@ export default function Artist() {
         'Authorization': 'Bearer ' + accessToken,
         'Content-Type': 'application/json'
       }
-    }).then(response => {
-      removeAlbumDuplicates(response.data.items)
-    }).catch(err => {
-      if (err instanceof TypeError == false){
-        console.log(err)
-      }
+    })
+    .then(albums => {
+      return removeAlbumDuplicates(albums.data.items)
+    })
+    .then(albumList => {
+      setArtistAlbums(albumList)
+    })
+    .catch(err => {
+      console.log(err);
     })
   }
 
-  function removeAlbumDuplicates (albums:any[]) {
+  function getCollaborators(albums){
+    albums.forEach((album) => {
+      let albumID = album.value.id
+      axios({
+        method: 'get',
+        url: `https://api.spotify.com/v1/albums/${albumID}/tracks`,
+        withCredentials: false,
+        params: {
+          market: 'US'
+        },
+        headers: {
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(tracks => {
+        return collabCounter(tracks)
+      })
+      .catch(err => {
+        console.log(err)
+      })
+    })
+  }
+
+  function collabCounter(trackList){
+    class Collaborator {
+      id: string;
+      name: string
+      type: string;
+      spotifyLink: string;
+      collabCount = 1
+
+      constructor (id, name, type, spotifyLink){
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.spotifyLink = spotifyLink;
+      }
+    }
+
+    trackList.data.items.forEach(track => {
+      track.artists.forEach(artist => {
+        if(artist.name !== artistName){
+          const mapKey:string = artist.name.replace(/ /g, "_")
+          const newCollab = new Collaborator(
+            artist.id, 
+            artist.name, 
+            artist.type, 
+            artist.href
+          )
+          if (!collaborators.has(mapKey)){
+            collaborators.set(mapKey, newCollab)
+          } else if (collaborators.has(mapKey)) {
+            let artist = collaborators.get(mapKey)
+            artist.collabCount++
+          }
+        }
+      })
+    })
+
+    let mapConvert = Array.from(collaborators.entries(), function(collaborator) {
+      return {key: collaborator[0], value: collaborator[1]}
+    })
+
+    setArtistCollabs(mapConvert)
+  }
+
+  function removeAlbumDuplicates(albums:any[]){
     class Album {
       id: string;
       name: string
@@ -95,109 +169,33 @@ export default function Artist() {
         this.artistFeatures = artistFeatures;
       }
     }
+    return new Promise((resolve, reject)=> {
+      let albumList = new Map()
 
-    let albumList = new Map()
+      albums.forEach(album => {
+          if (!albumList.has(album.name)){
+            const mapKey:string = album.name.replace(/ /g, "_")
+            const newAlbum = new Album(
+              album.id, 
+              album.name, 
+              album.type, 
+              album.images[1], 
+              album.external_urls.spotify, 
+              album.total_tracks, 
+              album.release_date,
+              album.artists
+            )
 
-    albums.forEach(album => {
-        if (!albumList.has(album.name)){
-          const mapKey:string = album.name.replace(/ /g, "_")
-          const newAlbum = new Album(
-            album.id, 
-            album.name, 
-            album.type, 
-            album.images[1], 
-            album.external_urls.spotify, 
-            album.total_tracks, 
-            album.release_date,
-            album.artists
-          )
-          albumList.set(mapKey, newAlbum)
-        }
-        let mapConvert = Array.from(albumList, function(mapAlbum) {
-          return {key: mapAlbum[0], value: mapAlbum[1]}
-        })
-
-        setArtistAlbums(mapConvert)
-    })
-  }
-
-  async function collabCount(artistAlbums){
-    let collabList = new Map()
-
-    class CollabArtist {
-      id: string;
-      name: string
-      type: string;
-      spotifyLink: string;
-      image: string;
-      collabCount = 1
-
-      // getImage = () => {
-      //   axios({
-      //     method: 'get',
-      //     url: `https://api.spotify.com/v1/artists/${id}`,
-      //     withCredentials: false,
-      //     headers: {
-      //       'Authorization': 'Bearer ' + accessToken,
-      //       'Content-Type': 'application/json'
-      //     }
-      //   }).then(response => {
-      //     console.log(response)
-      //     this.image = response.images[2]
-      //   })
-      // }
-
-      constructor (id, name, type, spotifyLink){
-        this.id = id;
-        this.name = name;
-        this.type = type;
-        this.spotifyLink = spotifyLink;
-      }
-    }
-
-    artistAlbums.forEach(album => {
-      const albumID = album.value.id
-      axios({
-        method: 'get',
-        url: `https://api.spotify.com/v1/albums/${albumID}/tracks`,
-        withCredentials: false,
-        headers: {
-          'Authorization': 'Bearer ' + accessToken,
-          'Content-Type': 'application/json'
-        }
-      }).then(track => {
-        track.data.items.forEach(song => {
-          song.artists.forEach(artist => {
-            if(artist.name !== artistName){
-              const mapKey:string = artist.name.replace(/ /g, "_")
-              const newCollab = new CollabArtist(
-                artist.id, 
-                artist.name, 
-                artist.type, 
-                artist.href
-              )
-              if (!collabList.has(mapKey)){
-                collabList.set(mapKey, newCollab)
-              } else if (collabList.has(mapKey)) {
-                let artist = collabList.get(mapKey)
-                artist.collabCount++
-              }
-            }
-          })
-
-          let mapConvert = Array.from(collabList.entries(), function(collaborator) {
-            return {key: collaborator[0], value: collaborator[1]}
-          })
-
-          setArtistCollabs(mapConvert)
-        })
-      }).catch(err => {
-        console.log(err)
+            albumList.set(mapKey, newAlbum)
+          }
       })
+
+      let mapConvert = Array.from(albumList, function(mapAlbum) {
+        return {key: mapAlbum[0], value: mapAlbum[1]}
+      })
+      resolve(mapConvert)
     })
-
   }
-
 
   const followCountEdit = (num:number) => {
       let stringConvert = num.toString().split("")
@@ -239,21 +237,30 @@ export default function Artist() {
   }
 
   useEffect(() => {
-    getArtist().then(response => getAlbums())
+    console.log('UE1')
+    getArtist()
   }, [])
 
-  // useEffect(() => {
-  //   if (artistAlbums !== undefined){
-  //     collabCount(artistAlbums)
-  //   }
-  // }, [artistAlbums])
+  useEffect(()=> {
+    if (artistName){
+      console.log('UE2')
+      getAlbums()
+    }
+  }, [artistName])
 
   useEffect(() => {
+    if (artistAlbums !== undefined){
+      console.log('UE3')
+      getCollaborators(artistAlbums)
+    }
+  }, [artistAlbums])
+
+  useEffect(()=> {
     if (artistCollabs !== undefined){
       artistCollabs.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
     }
-
-  }, [artistCollabs])
+  },[artistCollabs])
+ 
 
   return (
     <div className='flex flex-col w-screen items-center justify-center bg-gray-800 overflow-hidden no-scrollbar'>
