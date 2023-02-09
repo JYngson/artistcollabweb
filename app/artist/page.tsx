@@ -104,19 +104,40 @@ export default function Artist() {
     })
   }
 
+  function getCollaboratorImages(artistList){
+    artistList.forEach(artist => {
+      console.log(artist)
+      let artistID = artist.value.id
+      axios({
+        method: 'get',
+        url: `https://api.spotify.com/v1/artists/${artistID}`,
+        withCredentials: false,
+        headers: {
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        artist.value.image = response.data.images[2]
+      })
+    })
+  }
+
   function collabCounter(trackList){
     class Collaborator {
       id: string;
       name: string
       type: string;
       spotifyLink: string;
+      image: string;
       collabCount = 1
 
-      constructor (id, name, type, spotifyLink){
+      constructor (id, name, type, spotifyLink, image){
         this.id = id;
         this.name = name;
         this.type = type;
         this.spotifyLink = spotifyLink;
+        this.image = image;
       }
     }
 
@@ -128,7 +149,8 @@ export default function Artist() {
             artist.id, 
             artist.name, 
             artist.type, 
-            artist.href
+            artist.href,
+            ''
           )
           if (!collaborators.has(mapKey)){
             collaborators.set(mapKey, newCollab)
@@ -258,6 +280,7 @@ export default function Artist() {
   useEffect(()=> {
     if (artistCollabs !== undefined){
       artistCollabs.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
+      getCollaboratorImages(artistCollabs)
     }
   },[artistCollabs])
  
