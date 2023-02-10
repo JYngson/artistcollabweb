@@ -19,7 +19,9 @@ export default function Artist() {
   let [followers, setFollowers] = useState<string>();
   let [profilePicture, setProfilePicture] = useState<string | null>();
   let [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
-  let [artistCollabs, setArtistCollabs] = useState<any[]>();
+  let [artistCollabs, setArtistCollabs] = useState<any[] | undefined>(undefined);
+  let [temp, setTemp] = useState<any[] | undefined>(undefined)
+  let [loaded, setLoaded] = useState<boolean>(false)
   const collaborators = new Map()
 
   function getArtist (){
@@ -81,9 +83,10 @@ export default function Artist() {
   }
 
   function getCollaborators(albums){
-    albums.forEach((album) => {
+    let arr:any[] = []
+    let request = albums.map((album) => {
       let albumID = album.value.id
-      axios({
+       return axios({
         method: 'get',
         url: `https://api.spotify.com/v1/albums/${albumID}/tracks`,
         withCredentials: false,
@@ -96,18 +99,49 @@ export default function Artist() {
         }
       })
       .then(tracks => {
-        return collabCounter(tracks)
+        return tracks
       })
       .catch(err => {
         console.log(err)
       })
     })
+
+    Promise.all(request)
+      .then(result => {
+        arr = result
+        return "success"
+      })
+      .then(result => {
+        console.log(result)
+        collabCounter(arr)
+      })
+      .catch(err => {
+        console.log(err)
+      })
   }
 
   function getCollaboratorImages(artistList){
-    artistList.forEach(artist => {
+    class Collaborator {
+      id: string;
+      name: string;
+      collabs: number;
+      image: string;
+      href: string
+
+
+      constructor (id,name, collabs, image, href){
+        this.id = id;
+        this.name= name;
+        this.collabs = collabs;
+        this.image = image;
+        this.href = href
+      }
+    }
+
+    let request = artistList.map(artist => {
       let artistID = artist.value.id
-      axios({
+      let collabs = artist.value.collabCount
+      return axios({
         method: 'get',
         url: `https://api.spotify.com/v1/artists/${artistID}`,
         withCredentials: false,
@@ -117,56 +151,61 @@ export default function Artist() {
         }
       })
       .then(response => {
-        artist.value.image = response.data.images[2]
+        let collabArtist = new Collaborator(
+          response.data.id, 
+          response.data.name, 
+          collabs, 
+          response.data.images[2]?.url, 
+          response.data.href
+        )
+        
+        return collabArtist
       })
     })
+
+    Promise.all(request)
+      .then(response => {
+        setArtistCollabs(response);
+      })
   }
 
-  function collabCounter(trackList){
+  function collabCounter(albumList){
     class Collaborator {
       id: string;
-      name: string
-      type: string;
-      spotifyLink: string;
-      image: string;
       collabCount = 1
 
-      constructor (id, name, type, spotifyLink, image){
+      constructor (id){
         this.id = id;
-        this.name = name;
-        this.type = type;
-        this.spotifyLink = spotifyLink;
-        this.image = image;
       }
     }
 
-    trackList.data.items.forEach(track => {
-      track.artists.forEach(artist => {
-        if(artist.name !== artistName){
-          const mapKey:string = artist.name.replace(/ /g, "_")
-          const newCollab = new Collaborator(
-            artist.id, 
-            artist.name, 
-            artist.type, 
-            artist.href,
-            ''
-          )
-          if (!collaborators.has(mapKey)){
-            collaborators.set(mapKey, newCollab)
-          } else if (collaborators.has(mapKey)) {
-            let artist = collaborators.get(mapKey)
-            artist.collabCount++
-          }
-        }
+      albumList.forEach(album => {
+        album.data.items.forEach(track => {
+          track.artists.forEach(artist => {
+            if(artist.name !== artistName){
+              const mapKey:string = artist.name.replace(/ /g, "_")
+              const newCollab = new Collaborator(
+                artist.id, 
+              )
+              if (!collaborators.has(mapKey)){
+                collaborators.set(mapKey, newCollab)
+              } else if (collaborators.has(mapKey)) {
+                let artist = collaborators.get(mapKey)
+                artist.collabCount++
+              }
+            }
+          })
+        })
       })
-    })
 
-    let mapConvert = Array.from(collaborators.entries(), function(collaborator) {
-      return {key: collaborator[0], value: collaborator[1]}
-    })
-
-    setArtistCollabs(mapConvert)
-  }
+      let mapConvert = Array.from(collaborators.entries(), function(collaborator) {
+        return {key: collaborator[0], value: collaborator[1]}
+      })
+  
+      let sortedList = mapConvert.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
+  
+      setTemp(sortedList);
+  } 
 
   function removeAlbumDuplicates(albums:any[]){
     class Album {
@@ -254,7 +293,7 @@ export default function Artist() {
   }
   
   const log = () => {
-    console.log(artistCollabs)
+    console.log(temp)
   }
 
   useEffect(() => {
@@ -263,24 +302,32 @@ export default function Artist() {
 
   useEffect(()=> {
     if (artistName){
+      console.log('UE1')
       getAlbums()
     }
   }, [artistName])
 
   useEffect(() => {
     if (artistAlbums !== undefined){
+      console.log('UE2')
       getCollaborators(artistAlbums)
     }
   }, [artistAlbums])
 
   useEffect(()=> {
-    if (artistCollabs !== undefined){
-      artistCollabs.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
-      getCollaboratorImages(artistCollabs)
+    if (temp !== undefined){
+      console.log('UE3')
+      getCollaboratorImages(temp)
     }
-  },[artistCollabs])
- 
+  },[temp])
 
+  useEffect(() => {
+    if(artistCollabs !== undefined){
+      console.log('UE4')
+      setLoaded(true)
+    }
+  }, [artistCollabs])
+ 
   return (
     <div className='flex flex-col w-screen items-center justify-center bg-gray-800 overflow-hidden no-scrollbar'>
       { 
@@ -316,7 +363,7 @@ export default function Artist() {
 
       <div id='albumlist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
 
-        {artistAlbums &&
+        { artistAlbums &&
           artistAlbums.map(album => {
             return(
               <div key={album.key} className='flex flex-col items-center text-center shrink-0 w-56'>
@@ -343,27 +390,28 @@ export default function Artist() {
       </div>
 
       <div id='collablist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
-        <h1>Hello!</h1>
-        {
-          artistCollabs?.map(artist => {
-            // console.log(artist)
-            return (
-              <div key = {artist.value.id}>
-                { 
-                   artist?.value?.image?.url &&
-                    <Image
-                      src={artist.value.image.url}
-                      alt='spotify artist pic'
-                      className='rounded-full my-6 text-white'
-                      width={160}
-                      height={160}
-                    />
-                }
-                <h2>{artist.value.name}</h2>
-                <p>{artist.value.spotifyLink}</p>
-              </div>
-            )
-          })
+        { artistCollabs && loaded &&
+            artistCollabs.map(artist => {
+              return (
+                <div key={artist.key} className='flex flex-col items-center text-center shrink-0 w-56'>
+                  { 
+                    artist.image &&
+                      <Image
+                        src={artist.image}
+                        alt='spotify artist pic'
+                        className='rounded-full my-6 text-white'
+                        width={100}
+                        height={100}
+                        priority
+                      />
+                  }
+                  <h2 className='text-xl mb-2 text-white'>{artist.name}</h2>
+                  <a href={artist.href} className='mb-2 text-spotifyGreen'>Spotify</a>
+                  <p className='text-white'>Collab Count:</p>
+                  <p className='text-spotifyGreen'>{artist.collabs}</p>
+                </div>
+              )
+            })
         }
       </div>
 
