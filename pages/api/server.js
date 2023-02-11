@@ -16,6 +16,7 @@ app.get('/' , (req, res) =>{
 // Allow CORS middleware
 app.use(cors())
 
+// CORS Redundancy Check
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET");
@@ -71,6 +72,7 @@ app.get('/auth',(req, res) => {
       if (response.status == 200){
         const { access_token } = response.data;
         const { refresh_token } = response.data
+
         res.redirect('http://localhost:3000/?' +
           querystring.stringify({
             accessToken: access_token,
@@ -118,6 +120,12 @@ app.get('/tokenRefresh', (req, res) => {
 //Get artist list from Spotify API
 app.get('/artist', (req, res) => {
   res.redirect('http://localhost:3000/artist')
+})
+
+app.get('/test', (req,res) => {
+  const now = new Date()     
+  const hourFromNow = new Date(now.getTime() + 3600000)
+  res.send(hourFromNow)
 })
 
 app.listen(8080, (err) => {

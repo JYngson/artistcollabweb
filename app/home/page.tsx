@@ -15,6 +15,7 @@ export default function AccessToken() {
   let [artist, setArtist] = useState<String| null>();
   let [artistList, setArtistList] = useState<any[]>();
   let [modalMessage, setModalMessage] = useState<string>("Searching...")
+  let [error, setError] = useState<boolean>(false)
 
   const artistPageRedirect = (id:string) => {
     if (refreshToken){
@@ -22,6 +23,10 @@ export default function AccessToken() {
     } else {
       window.location.assign(`http://localhost:3000/artist?id=${id}&accessToken=${accessToken}`)
     }
+  }
+
+  const relog = () => {
+    window.location.assign('http://localhost:3000/login')
   }
 
   const modalHandler = () => {
@@ -45,38 +50,21 @@ export default function AccessToken() {
         'Content-Type': 'application/json'
       }
     }).then(response =>
-      response.data.artists.items.length == 0 ? 
-      setModalMessage("No artist found under that name! ; - ;") 
-      :
-      setArtistList(response.data.artists.items),
-      modalHandler()
+        response.data.artists.items.length == 0 ? 
+        setModalMessage("No artist found under that name! ; - ;") 
+        :
+        setArtistList(response.data.artists.items),
+        modalHandler()
     ).catch(err => {
         if(err.status == 401){
-          if(err.message = 'The access token expired'){
-            if(refreshToken){
-              window.location.assign(`http://localhost:8080/tokenRefresh?${refreshToken}`)
-            } else {
-              window.location.assign('http://localhost:3000/login')
-            }
+          if(refreshToken){
+            window.location.assign(`http://localhost:8080/tokenRefresh?${refreshToken}`)
+          } else {
+            window.location.assign('http://localhost:3000/login')
           }
-        }
+        } 
+        else {setError(true)}
     })
-  }
-
-  const modalStyle = {
-    overlay : {
-      backgroundColor: '#000000',
-      zIndex: 100
-    },
-    content: {
-      background: '#000000',
-      border: '2px solid #ccc',
-    }
-  }
-
-
-  const log = () => {
-    console.log(artistList)
   }
 
   const roundToThousand = (followers:number) => {
@@ -92,6 +80,22 @@ export default function AccessToken() {
     }
   }
 
+  const modalStyle = {
+    overlay : {
+      backgroundColor: '#000000',
+      zIndex: 100
+    },
+    content: {
+      background: '#000000',
+      border: '2px solid #ccc',
+    }
+  }
+
+  useEffect(() => {
+    if (error) {
+      setModalOpen(true)
+    }
+  }, [error])
 
   return (
     <div id='HomePage' className='flex flex-col relative max-w-screen h-screen justify-center items-center overflow-hidden bg-black'>
@@ -116,43 +120,53 @@ export default function AccessToken() {
           onClick={artistSearch}>
             Search
         </button>
+
       </div>
 
-      <Modal isOpen = {modalOpen} style={modalStyle}>
-        <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center bg-black'>
-          <button className='h-12 w-24 m-2 self-start rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
-            Close
-          </button>
-
-          { artistList? 
-              artistList.map(artist => {
-                return (
-                  <button 
-                    key={artist.id} 
-                    id='Card' 
-                    onClick={() => artistPageRedirect(artist.id)} 
-                    className='w-2/6 h-40 flex items-center bg-spotifyGreen my-2 rounded-xl hover:bg-white'
-                  >
-                    { artist.images &&
-                      <Image
-                        src={artist?.images[2]?.url}
-                        alt='spotify artist pic'
-                        className='rounded-3xl mx-6'
-                        width={100}
-                        height={100}
-                      />
-                    }
-                    <div className='flex flex-col w-full'>
-                      <h1 className='text-xl'>{artist.name}</h1>
-                      <p className='text-m'>Followers: {roundToThousand(artist.followers.total)}</p>
-                    </div>
-                  </button>
-                )
-              })
-              :
-            <h1 className='text-white'>{modalMessage}</h1>
-          }
-        </div>      
+      <Modal ariaHideApp={false} isOpen={modalOpen} style={modalStyle}>
+        {
+          error ? 
+            <div id='errorModal' className='flex flex-col max-w-screen overflow-scroll justify-center items-center text-center bg-black'>
+              <h1 className='text-3xl text-white'>Something went wrong! Please log in again.</h1>
+              <button onClick={relog} className='h-12 w-24 my-4 rounded-xl text-center bg-spotifyGreen'>
+                Redirect
+              </button>
+            </div>
+          :
+            <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center bg-black'>
+              <button className='h-12 w-24 m-2 self-start rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
+                Close
+              </button>
+              { artistList? 
+                  artistList.map(artist => {
+                    return (
+                      <button 
+                        key={artist.id} 
+                        id='Card' 
+                        onClick={() => artistPageRedirect(artist.id)} 
+                        className='w-2/6 h-40 flex items-center bg-spotifyGreen my-2 rounded-xl hover:bg-white'
+                      >
+                        { artist.images &&
+                          <Image
+                            src={artist?.images[2]?.url}
+                            alt='spotify artist pic'
+                            className='rounded-3xl mx-6'
+                            width={100}
+                            height={100}
+                          />
+                        }
+                        <div className='flex flex-col w-full'>
+                          <h1 className='text-xl'>{artist.name}</h1>
+                          <p className='text-m'>Followers: {roundToThousand(artist.followers.total)}</p>
+                        </div>
+                      </button>
+                    )
+                  })
+                :
+                  <h1 className='text-white'>{modalMessage}</h1>
+              }
+            </div>      
+        }
       </Modal>
     </div> 
   )

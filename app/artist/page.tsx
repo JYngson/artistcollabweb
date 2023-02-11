@@ -1,13 +1,15 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { PacmanLoader } from 'react-spinners';
+import Modal from 'react-modal';
 import Image from 'next/image'
 import React from 'react';
-
 
 export default function Artist() {
   const axios = require('axios')
   const searchParams = useSearchParams();
+  const [modalOpen, setModalOpen] = useState<Boolean>(false);
   let accessToken:string | null = searchParams.get('accessToken');
   let refreshToken:string | null = searchParams.get('refreshToken')
   let id:string | null = searchParams.get('id')
@@ -20,11 +22,12 @@ export default function Artist() {
   let [profilePicture, setProfilePicture] = useState<string | null>();
   let [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
   let [artistCollabs, setArtistCollabs] = useState<any[] | undefined>(undefined);
-  let [temp, setTemp] = useState<any[] | undefined>(undefined)
+  let [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
   let [loaded, setLoaded] = useState<boolean>(false)
-  const collaborators = new Map()
+  let [error, setError] = useState<string | null>(null)
+  let [errorNum, setErrorNum] = useState<number>()
 
-  function getArtist (){
+  function getArtist(){
     return axios({
       method: 'get',
       url: `https://api.spotify.com/v1/artists/${id}`,
@@ -45,15 +48,15 @@ export default function Artist() {
     })
     .catch(err => {
       if(err.status == 401){
-        if(err.message = 'The access token expired'){
-          if(refreshToken){
-            window.location.assign(`http://localhost:8080/tokenRefresh?${refreshToken}`)
-          } else {
-            window.location.assign('http://localhost:3000/login')
-          }
+        if(refreshToken){
+          window.location.assign(`http://localhost:8080/tokenRefresh?${refreshToken}`)
+        } else {
+          window.location.assign('http://localhost:3000/login')
         }
       } else {
-        console.log(err)
+        setErrorNum(err.status)
+        setError('Error getting artist')
+        setModalOpen(true)
       }
     })
   }
@@ -78,11 +81,13 @@ export default function Artist() {
       setArtistAlbums(albumList)
     })
     .catch(err => {
-      console.log(err);
+      setErrorNum(err.status);
+      setError('Error getting albums');
+      setModalOpen(true);
     })
   }
 
-  function getCollaborators(albums){
+  function getCollaborators(albums:any[]){
     let arr:any[] = []
     let request = albums.map((album) => {
       let albumID = album.value.id
@@ -102,7 +107,9 @@ export default function Artist() {
         return tracks
       })
       .catch(err => {
-        console.log(err)
+        setErrorNum(err.status);
+        setError('Error getting collaborators');
+        setModalOpen(true);
       })
     })
 
@@ -120,7 +127,7 @@ export default function Artist() {
       })
   }
 
-  function getCollaboratorImages(artistList){
+  function getCollaboratorImages(artistList:any[]){
     class Collaborator {
       id: string;
       name: string;
@@ -158,8 +165,12 @@ export default function Artist() {
           response.data.images[2]?.url, 
           response.data.href
         )
-        
         return collabArtist
+      })
+      .catch(err => {
+        setErrorNum(err.status);
+        setError('Error getting albums');
+        setModalOpen(true);
       })
     })
 
@@ -167,9 +178,16 @@ export default function Artist() {
       .then(response => {
         setArtistCollabs(response);
       })
+      .catch(err => {
+        setErrorNum(err.status);
+        setError('Error getting albums');
+        setModalOpen(true);
+      })
   }
 
-  function collabCounter(albumList){
+  function collabCounter(albumList:any[]){
+    const collaborators = new Map()
+
     class Collaborator {
       id: string;
       collabCount = 1
@@ -179,32 +197,32 @@ export default function Artist() {
       }
     }
 
-      albumList.forEach(album => {
-        album.data.items.forEach(track => {
-          track.artists.forEach(artist => {
-            if(artist.name !== artistName){
-              const mapKey:string = artist.name.replace(/ /g, "_")
-              const newCollab = new Collaborator(
-                artist.id, 
-              )
-              if (!collaborators.has(mapKey)){
-                collaborators.set(mapKey, newCollab)
-              } else if (collaborators.has(mapKey)) {
-                let artist = collaborators.get(mapKey)
-                artist.collabCount++
-              }
+    albumList.forEach(album => {
+      album.data.items.forEach(track => {
+        track.artists.forEach(artist => {
+          if(artist.name !== artistName){
+            const mapKey:string = artist.name.replace(/ /g, "_")
+            const newCollab = new Collaborator(
+              artist.id, 
+            )
+            if (!collaborators.has(mapKey)){
+              collaborators.set(mapKey, newCollab)
+            } else if (collaborators.has(mapKey)) {
+              let artist = collaborators.get(mapKey)
+              artist.collabCount++
             }
-          })
+          }
         })
       })
+    })
 
-      let mapConvert = Array.from(collaborators.entries(), function(collaborator) {
-        return {key: collaborator[0], value: collaborator[1]}
-      })
-  
-      let sortedList = mapConvert.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
-  
-      setTemp(sortedList);
+    let mapConvert = Array.from(collaborators.entries(), function(collaborator) {
+      return {key: collaborator[0], value: collaborator[1]}
+    })
+
+    let sortedList = mapConvert.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
+
+    setTempSorted(sortedList);
   } 
 
   function removeAlbumDuplicates(albums:any[]){
@@ -257,7 +275,7 @@ export default function Artist() {
     })
   }
 
-  const followCountEdit = (num:number) => {
+  function followCountEdit(num:number){
       let stringConvert = num.toString().split("")
       if (num / 100000000 >= 1){
         stringConvert.splice(3,0, ',')
@@ -283,7 +301,7 @@ export default function Artist() {
       }
   }
 
-  const searchRedirect = () => {
+  function searchRedirect(){
     if (refreshToken) {
       window.location.assign(`http://localhost:3000/home?accessToken=${accessToken}&refreshToken=${refreshToken}`)
     } else {
@@ -291,9 +309,20 @@ export default function Artist() {
     }
     
   }
-  
-  const log = () => {
-    console.log(temp)
+
+  function relog(){
+    window.location.assign('http://localhost:3000/login')
+  }
+
+  const modalStyle = {
+    overlay : {
+      backgroundColor: '#000000',
+      zIndex: 100
+    },
+    content: {
+      background: '#000000',
+      border: '2px solid #ccc',
+    }
   }
 
   useEffect(() => {
@@ -302,125 +331,142 @@ export default function Artist() {
 
   useEffect(()=> {
     if (artistName){
-      console.log('UE1')
       getAlbums()
     }
   }, [artistName])
 
   useEffect(() => {
     if (artistAlbums !== undefined){
-      console.log('UE2')
       getCollaborators(artistAlbums)
     }
   }, [artistAlbums])
 
   useEffect(()=> {
-    if (temp !== undefined){
-      console.log('UE3')
-      getCollaboratorImages(temp)
+    if (tempSorted !== undefined){
+      getCollaboratorImages(tempSorted)
     }
-  },[temp])
+  },[tempSorted])
 
   useEffect(() => {
     if(artistCollabs !== undefined){
-      console.log('UE4')
       setLoaded(true)
     }
   }, [artistCollabs])
- 
-  return (
-    <div className='flex flex-col w-screen items-center justify-center bg-gray-800 overflow-hidden no-scrollbar'>
-      { 
-       profilePicture &&
-        <Image
-          src={profilePicture}
-          alt='spotify artist pic'
-          className='rounded-full my-6 text-white'
-          width={320}
-          height={320}
-        />
-      }
-      <h1 className='text-2xl mb-2 text-white'>{artistName}</h1>
-      <h2 className='text-white'>Top Genres:</h2>
-        <ul className='flex flex-row mb-2'>
-          {
-            topGenres?.map((genre,index) => {
-              return(
-                <li key={index} className='text-white hover:text-spotifyGreen'> | {genre} | </li>
-              )
-            })
+
+  if (!loaded) {
+    return (
+      <div className='flex flex-col w-screen h-screen justify-center items-center bg-black text-white'>
+        <PacmanLoader color='#1DB954'/>
+        <h1>Loading...</h1>
+      </div>
+    )
+  } else return (
+      <div className='flex flex-col w-screen text-white items-center justify-center bg-gray-800 overflow-hidden no-scrollbar animate-fade-in'>
+        { 
+        profilePicture &&
+          <Image
+            src={profilePicture}
+            alt='spotify artist pic'
+            className='rounded-full my-6'
+            width={320}
+            height={320}
+          />
+        }
+        <h1 className='text-2xl mb-2'>{artistName}</h1>
+        <h2>Top Genres:</h2>
+          <ul className='flex flex-row mb-2'>
+            {
+              topGenres?.map((genre,index) => {
+                return(
+                  <li key={index} className='mx-2 hover:text-spotifyGreen'>{genre}</li>
+                )
+              })
+            }
+          </ul>
+        { spotifyLink && 
+          <a href={spotifyLink} className='mb-2 text-spotifyGreen'>
+            Link to Spotify Page
+          </a> 
+        }
+        <p>Popularity - {popularity}</p>
+        <p>Followers - {followers}</p>
+
+        <div id='albumlist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
+          { artistAlbums &&
+              artistAlbums.map(album => {
+                return(
+                  <div key={album.key} className='flex flex-col items-center text-center shrink-0 w-56'>
+                    { 
+                      album.value.image &&
+                        <Image
+                          src={album.value.image.url}
+                          alt='spotify artist pic'
+                          className='mb-6 '
+                          width={128}
+                          height={128}
+                        />
+                    }
+                    <div id='album' className='w-full  justify-between'>
+                      <h1 id='albumName' className='mb-2  text-clip'>{album.value.name}</h1>
+                      <p id='albumType' className='mb-2'>{album.value.type.toUpperCase()}</p>
+                      <p id='albumReleaseDate' className='mb-2'>Released: {album.value.releaseDate}</p>
+                      <a id='albumLink' href={album.value.spotifyLink} className='text-spotifyGreen'>Link to Album</a>
+                    </div>
+                  </div>
+                )
+              })
           }
-        </ul>
-      { spotifyLink && <a href={spotifyLink} className='mb-2 text-spotifyGreen'>Link to Spotify Page</a> }
-      <p className='text-white'>Popularity - {popularity}</p>
-      <p className='text-white'>Followers - {followers}</p>
+        </div>
+          
+        <h2 className='text-3xl '>Collaborators</h2>
 
-      <button 
-        onClick={log} 
-        className='h-12 w-24 my-8 rounded-xl text-center bg-spotifyGreen'>
-          Log
-      </button>
+        <div id='collablist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
+          { artistCollabs && loaded &&
+              artistCollabs.map(artist => {
+                return (
+                  <div key={artist.id} className='flex flex-col items-center text-center shrink-0 w-56'>
+                    { 
+                      artist.image &&
+                        <Image
+                          src={artist.image}
+                          alt='spotify artist pic'
+                          className='rounded-full my-6 '
+                          width={100}
+                          height={100}
+                          priority
+                        />
+                    }
+                    <h2 className='text-xl mb-2 '>{artist.name}</h2>
+                    <a href={artist.href} className='mb-2 text-spotifyGreen'>Spotify</a>
+                    <p>Collab Count:</p>
+                    <p className='text-spotifyGreen'>{artist.collabs}</p>
+                  </div>
+                )
+              })
+          }
+        </div>
 
-      <div id='albumlist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
+        <button 
+          onClick={searchRedirect} 
+          className='h-12 w-24 my-8 rounded-xl text-center bg-spotifyGreen'>
+            Back
+        </button>
 
-        { artistAlbums &&
-          artistAlbums.map(album => {
-            return(
-              <div key={album.key} className='flex flex-col items-center text-center shrink-0 w-56'>
-                { 
-                  album.value.image &&
-                    <Image
-                      src={album.value.image.url}
-                      alt='spotify artist pic'
-                      className='mb-6 text-white'
-                      width={128}
-                      height={128}
-                    />
-                }
-                <div id='album' className='w-full text-white justify-between'>
-                  <h1 id='albumName' className='mb-2  text-clip'>{album.value.name}</h1>
-                  <p id='albumType' className='mb-2'>{album.value.type.toUpperCase()}</p>
-                  <p id='albumReleaseDate' className='mb-2'>Released: {album.value.releaseDate}</p>
-                  <a id='albumLink' href={album.value.spotifyLink} className='text-spotifyGreen'>Link to Album</a>
-                </div>
-              </div>
-            )
-          })
-        }
+
+        <Modal ariaHideApp={false} isOpen={modalOpen} style={modalStyle}>
+          <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center text-center  bg-black'>
+            <h2 className='text-2xl'>Uh oh! Something went wrong... 😓</h2>
+            <p className='text-l'>Please log in again!</p>
+            { errorNum &&
+              <p className='text-sm'>Error Num: {errorNum}</p>
+            }
+            <p>{error}</p>
+            <button onClick={relog} className='h-12 w-24 my-4 rounded-xl text-center bg-spotifyGreen'>
+              Redirect
+            </button>
+          </div>
+        </Modal>
       </div>
-
-      <div id='collablist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
-        { artistCollabs && loaded &&
-            artistCollabs.map(artist => {
-              return (
-                <div key={artist.key} className='flex flex-col items-center text-center shrink-0 w-56'>
-                  { 
-                    artist.image &&
-                      <Image
-                        src={artist.image}
-                        alt='spotify artist pic'
-                        className='rounded-full my-6 text-white'
-                        width={100}
-                        height={100}
-                        priority
-                      />
-                  }
-                  <h2 className='text-xl mb-2 text-white'>{artist.name}</h2>
-                  <a href={artist.href} className='mb-2 text-spotifyGreen'>Spotify</a>
-                  <p className='text-white'>Collab Count:</p>
-                  <p className='text-spotifyGreen'>{artist.collabs}</p>
-                </div>
-              )
-            })
-        }
-      </div>
-
-      <button 
-        onClick={searchRedirect} 
-        className='h-12 w-24 my-8 rounded-xl text-center bg-spotifyGreen'>
-          Back
-      </button>
-    </div>
   )
 }
 
