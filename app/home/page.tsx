@@ -16,6 +16,7 @@ export default function AccessToken() {
   let [artistList, setArtistList] = useState<any[]>();
   let [modalMessage, setModalMessage] = useState<string>("Searching...")
   let [error, setError] = useState<boolean>(false)
+  let [queryLimit, setQueryLimit] = useState<number>(5)
 
   const artistPageRedirect = (id:string) => {
     if (refreshToken){
@@ -30,12 +31,13 @@ export default function AccessToken() {
   }
 
   const modalHandler = () => {
-    modalOpen === false ? setModalOpen(true) : setModalOpen(false)
+    if(modalOpen == false){
+      setModalOpen(true)
+    }
   }
 
   const artistSearch = () => {
     setArtistList(undefined)
-
     axios({
       method: 'get',
       url: 'https://api.spotify.com/v1/search',
@@ -43,7 +45,7 @@ export default function AccessToken() {
       params: {
         q: artist,
         type:'artist',
-        limit: 5
+        limit: queryLimit
       },
       headers: {
         'Authorization': 'Bearer ' + accessToken,
@@ -54,6 +56,7 @@ export default function AccessToken() {
         setModalMessage("No artist found under that name! ; - ;") 
         :
         setArtistList(response.data.artists.items),
+        setQueryLimit(queryLimit + 5),
         modalHandler()
     ).catch(err => {
         if(err.status == 401){
@@ -137,6 +140,7 @@ export default function AccessToken() {
               <button className='h-12 w-24 m-2 self-start rounded-xl text-center bg-spotifyGreen' onClick={modalHandler}>
                 Close
               </button>
+
               { artistList? 
                   artistList.map(artist => {
                     return (
@@ -165,6 +169,11 @@ export default function AccessToken() {
                 :
                   <h1 className='text-white'>{modalMessage}</h1>
               }
+
+              <button onClick={artistSearch} className='h-12 w-36 my-4 rounded-xl text-center bg-spotifyGreen'>
+                Expand Search
+              </button>
+
             </div>      
         }
       </Modal>
