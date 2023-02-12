@@ -21,7 +21,7 @@ export default function Artist() {
   let [followers, setFollowers] = useState<string>();
   let [profilePicture, setProfilePicture] = useState<string | null>();
   let [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
-  let [artistCollabs, setArtistCollabs] = useState<any[] | undefined>(undefined);
+  let [artistCollabs, setArtistCollabs] = useState<any[] | undefined | null>(undefined);
   let [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
   let [loaded, setLoaded] = useState<boolean>(false)
   let [error, setError] = useState<string | null>(null)
@@ -61,7 +61,7 @@ export default function Artist() {
     })
   }
 
-  function getAlbums(){
+  function getArtistAlbums(){
     axios({
       method: 'get',
       url: `https://api.spotify.com/v1/artists/${id}/albums`,
@@ -87,8 +87,9 @@ export default function Artist() {
     })
   }
 
-  function getCollaborators(albums:any[]){
+  function getAlbumTracks(albums:any[]){
     let arr:any[] = []
+
     let request = albums.map((album) => {
       let albumID = album.value.id
        return axios({
@@ -115,11 +116,11 @@ export default function Artist() {
 
     Promise.all(request)
       .then(result => {
+        console.log(result)
         arr = result
         return "success"
       })
       .then(result => {
-        console.log(result)
         collabCounter(arr)
       })
       .catch(err => {
@@ -176,7 +177,12 @@ export default function Artist() {
 
     Promise.all(request)
       .then(response => {
-        setArtistCollabs(response);
+        if (response.length == 0){
+          setLoaded(true)
+          setArtistCollabs([])
+        } else {
+          setArtistCollabs(response);
+        }
       })
       .catch(err => {
         setErrorNum(err.status);
@@ -192,7 +198,7 @@ export default function Artist() {
       id: string;
       collabCount = 1
 
-      constructor (id){
+      constructor (id:string){
         this.id = id;
       }
     }
@@ -216,14 +222,18 @@ export default function Artist() {
       })
     })
 
-    let mapConvert = Array.from(collaborators.entries(), function(collaborator) {
-      return {key: collaborator[0], value: collaborator[1]}
-    })
-
-    let sortedList = mapConvert.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
-
-    setTempSorted(sortedList);
-  } 
+    if (collaborators.size == 0){
+      setArtistCollabs(null)
+    } else {
+      let mapConvert = Array.from(collaborators.entries(), function(collaborator) {
+        return {key: collaborator[0], value: collaborator[1]}
+      })
+  
+      let sortedList = mapConvert.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
+  
+      setTempSorted(sortedList);
+    } 
+  }
 
   function removeAlbumDuplicates(albums:any[]){
     class Album {
@@ -331,13 +341,13 @@ export default function Artist() {
 
   useEffect(()=> {
     if (artistName){
-      getAlbums()
+      getArtistAlbums()
     }
   }, [artistName])
 
   useEffect(() => {
     if (artistAlbums !== undefined){
-      getCollaborators(artistAlbums)
+      getAlbumTracks(artistAlbums)
     }
   }, [artistAlbums])
 
@@ -421,7 +431,7 @@ export default function Artist() {
         <h2 className='text-3xl '>Collaborators</h2>
 
         <div id='collablist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
-          { artistCollabs && loaded &&
+          { artistCollabs && loaded ?
               artistCollabs.map(artist => {
                 return (
                   <div key={artist.id} className='flex flex-col items-center text-center shrink-0 w-56'>
@@ -443,6 +453,10 @@ export default function Artist() {
                   </div>
                 )
               })
+            :
+            <div className='w-screen'>
+              <p className='text-2xl text-center'>No collaborations found!</p>
+            </div>
           }
         </div>
 
@@ -454,7 +468,7 @@ export default function Artist() {
 
 
         <Modal ariaHideApp={false} isOpen={modalOpen} style={modalStyle}>
-          <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center text-center  bg-black'>
+          <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center text-center text-white bg-black'>
             <h2 className='text-2xl'>Uh oh! Something went wrong... 😓</h2>
             <p className='text-l'>Please log in again!</p>
             { errorNum &&
