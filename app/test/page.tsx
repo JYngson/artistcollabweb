@@ -1,13 +1,16 @@
 'use client'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useLoader } from '@react-three/fiber'
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei'
+import { TextureLoader } from 'three/src/loaders/TextureLoader'
 
 function Cylinder(props){
+  const artistImage = useLoader(TextureLoader,'/test.png')
   //Radius, Height, Width
   return (
     <mesh {...props}>
       <cylinderGeometry args={[2,2,0.5]} />
-      <meshStandardMaterial attach='material' color='#FFA500'/>
+      <meshStandardMaterial attach='material' color='#FFA500' map={artistImage}/>
+      
     </mesh>
   )
 }
@@ -33,7 +36,7 @@ export default function page() {
         {/* <PerspectiveCamera /> */}
         <OrbitControls />
         <Plane position={[0,0,0]} />
-        <Cylinder position={[0,0,3]} rotateX={Math.PI /2} />
+        <Cylinder position={[0,0,1]} rotation={[-Math.PI / 2, Math.PI / 2, 0]} />
       </Canvas>
     </div>
   )
