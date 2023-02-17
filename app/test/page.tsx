@@ -1,7 +1,40 @@
+'use client'
+import { Canvas } from '@react-three/fiber'
+import { PerspectiveCamera, OrbitControls } from '@react-three/drei'
+
+function Cylinder(props){
+  //Radius, Height, Width
+  return (
+    <mesh {...props}>
+      <cylinderGeometry args={[2,2,0.5]} />
+      <meshStandardMaterial attach='material' color='#FFA500'/>
+    </mesh>
+  )
+}
+
+function Plane(props){
+  //Width, Height
+  return(
+    <mesh {...props}>
+      <planeGeometry args={[30,30]} />
+      <meshStandardMaterial attach='material' color ='#FFFFFF'/>
+    </mesh>
+  )
+}
+
+
 export default function page() {
   return (
-    <div>
-      <h1>Playground</h1>
+    <div id='canvas-container' className='w-screen h-screen'>
+      <Canvas camera={{ fov: 75, near: 0.1, far: 1000, position: [0, 0, 15] }}>
+        <color attach="background" args={['#1e293b']} />
+        <ambientLight intensity={0.5}/>
+        <spotLight color='white' intensity={0.5} position={[0,0,5]} />
+        {/* <PerspectiveCamera /> */}
+        <OrbitControls />
+        <Plane position={[0,0,0]} />
+        <Cylinder position={[0,0,3]} rotateX={Math.PI /2} />
+      </Canvas>
     </div>
   )
 }

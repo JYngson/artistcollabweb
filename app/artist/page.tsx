@@ -14,18 +14,18 @@ export default function Artist() {
   let refreshToken:string | null = searchParams.get('refreshToken')
   let id:string | null = searchParams.get('id')
 
-  let [artistName, setArtistName] = useState<string | null>();
-  let [topGenres, setTopGenres] = useState<string[]>();
-  let [spotifyLink, setSpotifyLink] = useState<string | null>();
-  let [popularity, setPopularity] = useState<number>(0);
-  let [followers, setFollowers] = useState<string>();
-  let [profilePicture, setProfilePicture] = useState<string | null>();
-  let [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
-  let [artistCollabs, setArtistCollabs] = useState<any[] | undefined | null>(undefined);
-  let [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
-  let [loaded, setLoaded] = useState<boolean>(false)
-  let [error, setError] = useState<string | null>(null)
-  let [errorNum, setErrorNum] = useState<number>()
+  const [artistName, setArtistName] = useState<string | null>();
+  const [topGenres, setTopGenres] = useState<string[]>();
+  const [spotifyLink, setSpotifyLink] = useState<string | null>();
+  const [popularity, setPopularity] = useState<number>(0);
+  const [followers, setFollowers] = useState<string>();
+  const [profilePicture, setProfilePicture] = useState<string | null>();
+  const [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
+  const [artistCollabs, setArtistCollabs] = useState<any[] | undefined | null>(undefined);
+  const [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
+  const [loaded, setLoaded] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [errorNum, setErrorNum] = useState<number>()
 
   function getArtist(){
     return axios({
@@ -417,6 +417,7 @@ export default function Artist() {
               artistAlbums.map(album => {
                 return(
                   <div key={album.key} className='flex flex-col items-center text-center shrink-0 w-56'>
+                    <a href={album.value.spotifyLink}>
                     { 
                       album.value.image &&
                         <Image
@@ -427,6 +428,7 @@ export default function Artist() {
                           height={128}
                         />
                     }
+                    </a>
                     <div id='album' className='w-full  justify-between'>
                       <h1 id='albumName' className='mb-2  text-clip'>{album.value.name}</h1>
                       <p id='albumType' className='mb-2'>{album.value.type.toUpperCase()}</p>
