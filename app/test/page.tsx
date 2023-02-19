@@ -1,9 +1,16 @@
 'use client'
-import * as THREE from "three";
 import { Canvas, useLoader } from '@react-three/fiber'
-import { PerspectiveCamera, OrbitControls } from '@react-three/drei'
+import { OrbitControls, Text } from '@react-three/drei'
 import { TextureLoader } from 'three/src/loaders/TextureLoader'
 import { Suspense } from "react";
+
+const testData = [{artistName: 'Gallant', collabCount: 2},
+{artistName: 'Kendrick Lamar', collabCount: 5},
+{artistName: 'Jey Lato', collabCount: 3},
+{artistName: 'Ed Sheeran', collabCount: 9},
+{artistName: 'GUY', collabCount: 6},
+{artistName: 'Buffy', collabCount: 8},
+{artistName: 'Giles', collabCount: 4}]
 
 
 function Cylinder(props){
@@ -13,6 +20,8 @@ function Cylinder(props){
     <mesh {...props}>
       <cylinderGeometry args={[2,2,0.5]} />
       <meshStandardMaterial attach='material' color='#FFA500' map={artistImage} />
+      <Text position={[3,0,0]} color='red' rotation={[Math.PI / 2, 0 , Math.PI / 2]}>Artist Names</Text>
+      <Text position={[4,0,0]} color='blue' rotation={[Math.PI / 2, 0 , Math.PI / 2]}>Collaborations: 2</Text>
     </mesh>
   )
 }
