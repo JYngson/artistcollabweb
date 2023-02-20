@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@next/font": "13.1.1",
+    "@react-three/cannon": "^6.5.2",
     "@react-three/drei": "^9.56.25",
     "@react-three/fiber": "^8.11.1",
     "@types/node": "18.11.18",
