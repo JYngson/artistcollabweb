@@ -1,9 +1,12 @@
 'use client'
-import { Canvas, useLoader } from '@react-three/fiber'
-import { OrbitControls, Text } from '@react-three/drei'
-import { TextureLoader } from 'three/src/loaders/TextureLoader'
+import { Canvas, useLoader, useFrame } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { TextureLoader } from 'three/src/loaders/TextureLoader';
 import { Suspense } from "react";
-import { Physics, useCylinder, usePlane } from '@react-three/cannon'
+import { Physics, useCylinder, usePlane, useBox } from '@react-three/cannon';
+import * as THREE from 'three';
+import { Vector2 } from 'three';
+
 
 const testData = [
   {artistName: 'Gallant', collabCount: 2},
@@ -30,10 +33,8 @@ const collabSum = testData.reduce(function(acc, collaborator){
   return acc + collaborator.collabCount
 }, 0)
 
-console.log(collabSum)
-
 //React Fiber && THREE.js
-function Cylinder({position, rotation}){
+function ArtistCoin({position, rotation}){
   const artistImage = useLoader(TextureLoader,'/test.png')
   const [ref] = useCylinder(() => (
     {
@@ -64,7 +65,7 @@ function Plane({position, rotation}){
   return(
     <mesh ref={ref}>
       <planeGeometry args={[10000,10000]} />
-      <meshStandardMaterial attach='material' color ='#FFFFFF'/>
+      <meshStandardMaterial attach='material' color ='#334155'/>
     </mesh>
   )
 }
@@ -87,21 +88,46 @@ function CollabCoin({position, rotation, size}){
   )
 }
 
+function CursorMove(){
+  const [ref, api] = useBox(() => (
+    {
+      mass: 0,
+      position: [0,0,0],
+    }
+  ))
+
+  useFrame(({ camera, pointer, viewport }) => {
+    let x = pointer.x * camera.position.y * viewport.width / 20
+    let z =  pointer.y * -camera.position.y * viewport.height / 20
+    const vector = new THREE.Vector3(x, 1, z);
+    api.position.set(vector.x, vector.y, vector.z);
+})
+
+  return (
+    <mesh ref={ref} position={[0,0,0]}>
+      <coneGeometry args={[2,2,4]} />
+      <meshStandardMaterial attach='material' color='#FF0000'/>
+    </mesh>
+  )
+}
+
 export default function page() {
-  console.log(testData)
+
+  
   return (
     <div id='canvas-container' className='w-screen h-screen'>
       <Canvas camera={{ fov: 75, near: 0.1, far: 1000, position: [0,10,0] }}>
         <color attach="background" args={['#1e293b']} />
         <ambientLight intensity={1}/>
-        <OrbitControls />
+        <OrbitControls maxPolarAngle={0} rotateSpeed={0} />
         <Suspense fallback={null}>
           <gridHelper args={[20,20, '#FF0000', '#FF0000']} />
           <gridHelper args={[20,20, '#00FF00', '#00FF00']} rotation={[0,0,Math.PI / 2]} />
           <gridHelper args={[20,20, '#0000FF', '#0000FF']} rotation={[Math.PI / 2,0,0]} />
           <Physics>
             <Plane position={[0,0,0]} rotation={[-Math.PI / 2, 0, 0 ]} />
-            <Cylinder position={[0,1,0]} rotation={[Math.PI, Math.PI / 2, 0]}/>
+            <CursorMove />
+            <ArtistCoin position={[0,1,0]} rotation={[Math.PI, Math.PI / 2, 0]}/>
           {
             testData.map((collaborator, index) => {
               let coinSize:number = Math.round((collaborator.collabCount / collabSum) * testData.length) + 1
