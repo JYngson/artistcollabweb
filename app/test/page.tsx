@@ -5,7 +5,6 @@ import { TextureLoader } from 'three/src/loaders/TextureLoader';
 import { Suspense } from "react";
 import { Physics, useCylinder, usePlane, useBox } from '@react-three/cannon';
 import * as THREE from 'three';
-import { Vector2 } from 'three';
 
 
 const testData = [
@@ -112,11 +111,9 @@ function CursorMove(){
 }
 
 export default function page() {
-
-  
   return (
-    <div id='canvas-container' className='w-screen h-screen'>
-      <Canvas camera={{ fov: 75, near: 0.1, far: 1000, position: [0,10,0] }}>
+    <div id='canvasContainer' className='flex flex-col w-screen h-screen'>
+      <Canvas id='canvas' camera={{ fov: 75, near: 0.1, far: 1000, position: [0,10,0] }}>
         <color attach="background" args={['#1e293b']} />
         <ambientLight intensity={1}/>
         <OrbitControls maxPolarAngle={0} rotateSpeed={0} />
@@ -149,6 +146,10 @@ export default function page() {
           </Physics>
         </Suspense>
       </Canvas>
+
+      <div id='collabList' className='absolute bottom-0 h-2/6 w-screen bg-slate-200/[0.5]'>
+        <h1>Hello!</h1>
+      </div>
     </div>
   )
 }
