@@ -90,7 +90,7 @@ app.get('/auth',(req, res) => {
 
 //Refresh token request.
 app.get('/tokenRefresh', (req, res) => {
-  const { refreshToken } = req.query
+  const refreshToken = req.query.refreshToken
   axios({
     method: 'post',
     url: 'https://accounts.spotify.com/api/token',

@@ -47,14 +47,14 @@ export default function Artist() {
       return artist
     })
     .catch(err => {
-      if(err.status == 401){
+      if(err.response.status == 401){
         if(refreshToken){
-          window.location.assign(`http://localhost:8080/tokenRefresh?${refreshToken}`)
+          window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
         } else {
           window.location.assign('http://localhost:3000/login')
         }
       } else {
-        setErrorNum(err.status)
+        setErrorNum(err.response.status)
         setError('Error getting artist')
         setModalOpen(true)
       }
@@ -81,9 +81,19 @@ export default function Artist() {
       setArtistAlbums(albumList)
     })
     .catch(err => {
-      setErrorNum(err.status);
-      setError('Error getting albums');
-      setModalOpen(true);
+      if (err.response.status == 401){
+        if (refreshToken) {
+          window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
+        } else {
+          setErrorNum(err.response.status);
+          setError('Error getting albums');
+          setModalOpen(true);
+        }
+      } else {
+        setErrorNum(err.response.status);
+        setError('Error getting albums');
+        setModalOpen(true);
+      }
     })
   }
 
@@ -313,20 +323,19 @@ export default function Artist() {
       }
   }
 
-  function searchRedirect(){
+  function homeRedirect(){
     if (refreshToken) {
       window.location.assign(`http://localhost:3000/home?accessToken=${accessToken}&refreshToken=${refreshToken}`)
     } else {
       window.location.assign(`http://localhost:3000/home?accessToken=${accessToken}`)
     }
-    
   }
 
   function relog(){
     window.location.assign('http://localhost:3000/login')
   }
   
-  function redirect(id:string){
+  function artistRedirect(id:string){
     if (refreshToken){
       window.location.assign(`http://localhost:3000/artist?id=${id}&accessToken=${accessToken}&refreshToken=${refreshToken}`)
     } else {
@@ -334,10 +343,18 @@ export default function Artist() {
     }
   }
 
+  function coinMapRedirect(){
+    if (refreshToken){
+      window.location.assign(`http://localhost:3000/3DView?id=${id}&accessToken=${accessToken}&refreshToken=${refreshToken}`)
+    } else {
+      window.location.assign(`http://localhost:3000/3DView?id=${id}&accessToken=${accessToken}`)
+    }
+  }
+
   const modalStyle = {
     overlay : {
       backgroundColor: '#000000',
-      zIndex: 100
+      zIndex: 1000
     },
     content: {
       background: '#000000',
@@ -374,12 +391,42 @@ export default function Artist() {
     console.log(tempSorted)
   }, [artistCollabs])
 
+  useEffect(() => {
+    let buffer = setTimeout(() => {
+      if (!loaded){
+        if(error !== null){
+          setError('Load failed :(')
+          setModalOpen(true)
+        }        
+      }
+    }, 10000)
+    return () => {
+      clearTimeout(buffer)
+    }
+  }, [])
+
   if (!loaded) {
     return (
-      <div className='flex flex-col w-screen h-screen justify-center items-center bg-black text-white'>
-        <PacmanLoader color='#1DB954'/>
-        <h1>Loading...</h1>
-      </div>
+        <div className='flex flex-col w-screen h-screen justify-center items-center bg-black text-white'>
+          <PacmanLoader color='#1DB954'/>
+          <h1>Loading...</h1>
+
+          <Modal ariaHideApp={false} isOpen={modalOpen} style={modalStyle}>
+            <div id='searchResults' className='flex flex-col max-w-screen overflow-scroll justify-center items-center text-center text-white bg-black'>
+              <h2 className='text-2xl'>Uh oh! Something went wrong... 😓</h2>
+              <p className='text-l'>Please log in again!</p>
+              { errorNum &&
+                <p className='text-sm'>Error Num: {errorNum}</p>
+              }
+              <p>{error}</p>
+              <button onClick={relog} className='h-12 w-24 my-4 rounded-xl text-center bg-spotifyGreen'>
+                Redirect
+              </button>
+            </div>
+          </Modal>
+        </div>
+
+        
     )
   } else return (
       <div className='flex flex-col w-screen text-white items-center justify-center bg-gray-800 overflow-hidden no-scrollbar animate-fade-in'>
@@ -411,6 +458,9 @@ export default function Artist() {
         }
         <p>Popularity - {popularity}</p>
         <p>Followers - {followers}</p>
+        <button className='w-32 h-12 rounded-3xl text-l bg-spotifyGreen text-black m-4' onClick={coinMapRedirect}>
+          Coin Map!
+        </button>
 
         <div id='albumlist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
           { artistAlbums &&
@@ -448,22 +498,22 @@ export default function Artist() {
               artistCollabs.map(artist => {
                 return (
                   <div key={artist.id} className='flex flex-col items-center text-center shrink-0 w-56'>
-                    <button onClick ={() =>redirect(artist.id)}>
-                    <div className='flex items-center w-28 h-28 my-6 bg-black rounded-full'>
+                    <button onClick ={() =>artistRedirect(artist.id)}>
+                    <div className='flex items-center w-28 h-28 my-6 bg-black rounded-full overflow-hidden'>
                       { 
                         artist.image &&
-                            <Image
-                              src={artist.image}
-                              alt='spotify artist pic'
-                              className='rounded-full'
-                              width={112}
-                              height={112}
-                              priority
-                            />
+                          <Image
+                            src={artist.image}
+                            alt='spotify artist pic'
+                            className='rounded-full'
+                            width={112}
+                            height={112}
+                            object-fit='contain'
+                          />
                       }
                     </div>
                     </button>
-                    <h2 className='text-xl mb-2 '>{artist.name}</h2>
+                    <h2 className='text-xl mb-2'>{artist.name}</h2>
                     <a href={artist.href} className='mb-2 text-spotifyGreen'>Spotify</a>
                     <p>Collab Count:</p>
                     <p className='text-spotifyGreen'>{artist.collabs}</p>
@@ -478,7 +528,7 @@ export default function Artist() {
         </div>
 
         <button 
-          onClick={searchRedirect} 
+          onClick={homeRedirect} 
           className='h-12 w-24 my-8 rounded-xl text-center bg-spotifyGreen'>
             Back
         </button>
