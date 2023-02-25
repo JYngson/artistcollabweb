@@ -8,9 +8,11 @@
     "app": "npm run dev & npm run server",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "netlify": "./node_modules/.bin/netlify"
   },
   "dependencies": {
+    "@netlify/functions": "^1.4.0",
     "@next/font": "13.1.1",
     "@react-three/cannon": "^6.5.2",
     "@react-three/drei": "^9.56.25",
