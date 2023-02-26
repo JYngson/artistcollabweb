@@ -117,18 +117,3 @@ app.get('/tokenRefresh', (req, res) => {
   })
 })
 
-//Get artist list from Spotify API
-app.get('/artist', (req, res) => {
-  res.redirect('http://localhost:3000/artist')
-})
-
-app.get('/test', (req,res) => {
-  const now = new Date()     
-  const hourFromNow = new Date(now.getTime() + 3600000)
-  res.send(hourFromNow)
-})
-
-app.listen(8080, (err) => {
-  if (err) throw err
-  console.log('listening on port 8080')
-})

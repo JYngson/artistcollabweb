@@ -5,11 +5,11 @@ import BG from '../../images/LoginBG.jpg'
 export default function LoginPage(){
   const redirect = (e:React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    window.location.assign('http://localhost:8080/token')
+    window.location.assign('http://localhost:8888/.netlify/functions/getSpotifyToken')
   }
 
   return(
-    <div id='LoginPage' className='flex h-screen w-screen justify-center items-center relative bg-black'>
+    <div id='LoginPage' className='flex h-screen w-screen justifyx-center items-center relative bg-black'>
       <Image
         src={BG}
         alt='background image'
