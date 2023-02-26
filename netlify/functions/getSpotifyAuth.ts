@@ -4,15 +4,17 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import querystring from 'querystring'
 import axios from 'axios';
+import dotenv from 'dotenv'
 
 const app = express()
+dotenv.config()
 
 app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 
-let clientID = process.env.CLIENT_ID.toString();
-let clientSecret = process.env.CLIENT_SECRET.toString();
+let clientID = process.env.CLIENT_ID!.toString();
+let clientSecret = process.env.CLIENT_SECRET!.toString();
 
 app.get('/.netlify/functions/getSpotifyAuth',(req, res) => {
   let code = req.query.code || null;
@@ -35,7 +37,6 @@ app.get('/.netlify/functions/getSpotifyAuth',(req, res) => {
       if (response.status == 200){
         const { access_token } = response.data;
         const { refresh_token } = response.data
-
         res.redirect('http://localhost:3000/?' +
           querystring.stringify({
             accessToken: access_token,
