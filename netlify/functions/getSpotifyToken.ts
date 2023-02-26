@@ -2,11 +2,10 @@ import serverless from 'serverless-http';
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import querystring from 'querystring'
-import dotenv from 'dotenv'
+import queryString from 'query-string';
+import dotenv from 'dotenv/config'
 
 const app = express()
-dotenv.config()
 
 app.use(cors())
 app.use(bodyParser.json())
@@ -22,7 +21,7 @@ app.use(function(req, res, next) {
   next();
 });
 
-function randomStringGen(length) {
+function randomStringGen(length:number) {
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
@@ -39,7 +38,7 @@ app.get('/.netlify/functions/getSpotifyToken',(req, res) => {
   res.cookie(stateKey, state)
 
   res.redirect('https://accounts.spotify.com/authorize?' +
-    querystring.stringify({
+    queryString.stringify({
       response_type: 'code',
       client_id: clientID,
       redirect_uri: 'http://localhost:8888/.netlify/functions/getSpotifyAuth',
@@ -48,4 +47,4 @@ app.get('/.netlify/functions/getSpotifyToken',(req, res) => {
 });
 
 
-exports.handler = serverless(app)
+module.exports.handler = serverless(app)

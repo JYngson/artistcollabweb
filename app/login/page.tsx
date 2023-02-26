@@ -9,7 +9,7 @@ export default function LoginPage(){
   }
 
   return(
-    <div id='LoginPage' className='flex h-screen w-screen justifyx-center items-center relative bg-black'>
+    <div id='LoginPage' className='flex h-screen w-screen justify-center items-center relative bg-black'>
       <Image
         src={BG}
         alt='background image'

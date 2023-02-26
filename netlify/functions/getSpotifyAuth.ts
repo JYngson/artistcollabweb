@@ -2,16 +2,22 @@ import serverless from 'serverless-http';
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import querystring from 'querystring'
+import queryString from 'query-string';
 import axios from 'axios';
-import dotenv from 'dotenv'
+import dotenv from 'dotenv/config';
 
 const app = express()
-dotenv.config()
 
 app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 let clientID = process.env.CLIENT_ID!.toString();
 let clientSecret = process.env.CLIENT_SECRET!.toString();
@@ -23,7 +29,7 @@ app.get('/.netlify/functions/getSpotifyAuth',(req, res) => {
     method: 'post',
     url: 'https://accounts.spotify.com/api/token',
     data:
-      querystring.stringify({
+      queryString.stringify({
         grant_type: 'authorization_code',
         code: code,
         redirect_uri: 'http://localhost:8888/.netlify/functions/getSpotifyAuth',
@@ -38,7 +44,7 @@ app.get('/.netlify/functions/getSpotifyAuth',(req, res) => {
         const { access_token } = response.data;
         const { refresh_token } = response.data
         res.redirect('http://localhost:3000/?' +
-          querystring.stringify({
+          queryString.stringify({
             accessToken: access_token,
             refreshToken: refresh_token,
           })
@@ -52,4 +58,4 @@ app.get('/.netlify/functions/getSpotifyAuth',(req, res) => {
     })
 })
 
-exports.hander = serverless(app)
+module.exports.handler = serverless(app)
