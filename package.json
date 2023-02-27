@@ -6,7 +6,7 @@
     "dev": "next dev",
     "server": "nodemon ./pages/api/server.js",
     "app": "npm run dev & npm run server",
-    "build": "next build",
+    "build": "next build && next export",
     "start": "next start",
     "lint": "next lint",
     "netlify": "./node_modules/.bin/netlify"
