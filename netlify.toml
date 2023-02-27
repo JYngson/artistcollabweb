@@ -1,7 +1,8 @@
 [build]
-  command = '# no build command'
+  command = 'next build && next export'
   functions = 'netlify/functions'
-  publish = '.next'
+  publish = 'out'
+  base = '.'
 
 [functions]
   node_bundler = 'esbuild'
