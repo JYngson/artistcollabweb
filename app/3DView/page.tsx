@@ -24,6 +24,7 @@ function ArtistCoin({position, rotation, image} : {position: Triplet, rotation: 
   ))
   //Radius, Height, Width
   return (
+    //@ts-ignore
     <mesh ref={ref}>
       <cylinderGeometry args={[3,3,0.5]} />
       <meshStandardMaterial attach='material' map={artistImage} />
@@ -41,6 +42,7 @@ function Plane({position, rotation}: {position: Triplet, rotation: Triplet}){
     }
   ));
   return(
+    //@ts-ignore
     <mesh ref={ref}>
       <planeGeometry args={[10000,10000]} />
       <meshStandardMaterial attach='material' color ='#334155'/>
@@ -57,8 +59,8 @@ function CollabCoin({position, rotation, size, image}: {position: Triplet, rotat
       rotation: rotation
     }
   ))
-  //Radius, Height, Width
   return (
+    //@ts-ignore
     <mesh ref={ref}>
       <cylinderGeometry args={[size,size,0.5]} />
       <meshStandardMaterial attach='material' map={artistImage} />
@@ -82,6 +84,7 @@ function CursorMove(){
 })
 
   return (
+    //@ts-ignore
     <mesh ref={ref} position={[0,0,0]}>
       <coneGeometry args={[2,2,4]} />
       <meshStandardMaterial attach='material' visible={false} />
@@ -471,6 +474,7 @@ export default function page() {
           artistCollabs.map((collaborator) => {
             return (
               <button 
+                key={collaborator.id}
                 id='Card' 
                 className='w-5/6 h-28 flex items-center bg-spotifyGreen p-2 m-2 rounded-xl hover:bg-white'
                 onClick={() => artistRedirect(collaborator.id)}

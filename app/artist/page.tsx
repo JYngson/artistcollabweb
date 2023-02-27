@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PacmanLoader } from 'react-spinners';
 import Modal from 'react-modal';
@@ -22,7 +22,8 @@ export default function Artist() {
   const [profilePicture, setProfilePicture] = useState<string | null>();
   const [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
   const [artistCollabs, setArtistCollabs] = useState<any[] | undefined | null>(undefined);
-  const [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
+  // const [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
+  const tempSorted = useRef<any[]>([])
   const [loaded, setLoaded] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [errorNum, setErrorNum] = useState<number>()
@@ -38,8 +39,8 @@ export default function Artist() {
       }
     })
     .then(artist => {
+      artist.data.images[1]? setProfilePicture(artist.data.images[1].url) : setProfilePicture('')
       setArtistName(artist.data.name)
-      setProfilePicture(artist.data.images[1].url)
       setTopGenres(artist.data.genres)
       setSpotifyLink(artist.data.external_urls.spotify)
       setPopularity(artist.data.popularity)
@@ -47,14 +48,15 @@ export default function Artist() {
       return artist
     })
     .catch(err => {
-      if(err.response.status == 401){
+      if(err.status == 401){
         if(refreshToken){
           window.location.assign(`http://localhost:8080/tokenRefresh?refreshToken=${refreshToken}`)
         } else {
           window.location.assign('http://localhost:3000/login')
         }
       } else {
-        setErrorNum(err.response.status)
+        console.log(err)
+        setErrorNum(err.status)
         setError('Error getting artist')
         setModalOpen(true)
       }
@@ -126,7 +128,6 @@ export default function Artist() {
 
     Promise.all(getTracks)
       .then(result => {
-        console.log(result)
         arr = result
         return "success"
       })
@@ -179,8 +180,8 @@ export default function Artist() {
       })
   
       let sortedList = mapConvert.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
-      console.log(mapConvert)
-      setTempSorted(sortedList);
+
+      tempSorted.current = sortedList
     } 
   }
 
@@ -380,7 +381,7 @@ export default function Artist() {
 
   useEffect(()=> {
     if (tempSorted !== undefined){
-      getCollaboratorImages(tempSorted)
+      getCollaboratorImages(tempSorted.current)
     }
   },[tempSorted])
 
@@ -388,7 +389,6 @@ export default function Artist() {
     if(artistCollabs !== undefined){
       setLoaded(true)
     }
-    console.log(tempSorted)
   }, [artistCollabs])
 
   useEffect(() => {
@@ -430,6 +430,7 @@ export default function Artist() {
     )
   } else return (
       <div className='flex flex-col w-screen text-white items-center justify-center bg-gray-800 overflow-hidden no-scrollbar animate-fade-in'>
+        <div className='flex items-center w-80 h-80 my-6 bg-black rounded-full overflow-hidden'>
         { 
         profilePicture &&
           <Image
@@ -440,6 +441,7 @@ export default function Artist() {
             height={320}
           />
         }
+        </div>
         <h1 className='text-2xl mb-2'>{artistName}</h1>
         <h2>Top Genres:</h2>
           <ul className='flex flex-row mb-2'>
@@ -494,7 +496,7 @@ export default function Artist() {
         <h2 className='text-3xl'>Collaborators</h2>
 
         <div id='collablist' className='flex overflow-scroll w-screen space-x-8 p-12 no-scrollbar'>
-          { artistCollabs && loaded ?
+          { artistCollabs && artistCollabs.length > 1 && loaded ?
               artistCollabs.map(artist => {
                 return (
                   <div key={artist.id} className='flex flex-col items-center text-center shrink-0 w-56'>
