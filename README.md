@@ -1,5 +1,7 @@
 [In Progress]
 
+*Halted - Pending Next JS 13 update to next export command
+
 Tech Stack -
 Javascript, TypeScript, React, Next.js, Tailwind, Express, Axios
 
