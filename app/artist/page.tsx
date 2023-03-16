@@ -22,8 +22,7 @@ export default function Artist() {
   const [profilePicture, setProfilePicture] = useState<string | null>();
   const [artistAlbums, setArtistAlbums] = useState<any[] | undefined>(undefined);
   const [artistCollabs, setArtistCollabs] = useState<any[] | undefined | null>(undefined);
-  // const [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
-  const tempSorted = useRef<any[]>([])
+  const [tempSorted, setTempSorted] = useState<any[] | undefined>(undefined)
   const [loaded, setLoaded] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [errorNum, setErrorNum] = useState<number>()
@@ -181,7 +180,7 @@ export default function Artist() {
   
       let sortedList = mapConvert.sort((a,b) => a.value.collabCount < b.value.collabCount? 1 : -1)
 
-      tempSorted.current = sortedList
+      setTempSorted(sortedList)
     } 
   }
 
@@ -381,7 +380,7 @@ export default function Artist() {
 
   useEffect(()=> {
     if (tempSorted !== undefined){
-      getCollaboratorImages(tempSorted.current)
+      getCollaboratorImages(tempSorted)
     }
   },[tempSorted])
 

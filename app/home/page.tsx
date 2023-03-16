@@ -3,7 +3,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import Image from 'next/image'
-import BG from '../../images/SearchBG.jpg'
+import BG from '../../public/SearchBG.jpg'
 
 export default function AccessToken() {
   const searchParams = useSearchParams();
@@ -104,6 +104,7 @@ export default function AccessToken() {
     <div id='HomePage' className='flex flex-col relative max-w-screen h-screen justify-center items-center overflow-hidden bg-black'>
       <Image
         src={BG}
+        placeholder='blur'
         alt='background image'
         className='absolute object-cover z-0 w-full h-full animate-fade-in'
       />

@@ -9,7 +9,11 @@ const cors = require('cors')
 let clientID = process.env.CLIENT_ID.toString();
 let clientSecret = process.env.CLIENT_SECRET.toString();
 
-app.get('/' , (req, res) =>{
+app.listen(8080, () => {
+  console.log('listening on port 8080')
+})
+
+app.get('/', (req, res) =>{
   res.send('listening on port 8080')
 })
 

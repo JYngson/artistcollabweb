@@ -1,17 +1,18 @@
 "use client"
 import Image from 'next/image'
-import BG from '../../images/LoginBG.jpg'
+import BG from '../../public/LoginBG.jpg'
 
 export default function LoginPage(){
   const redirect = (e:React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    window.location.assign('http://localhost:8888/.netlify/functions/getSpotifyToken')
+    window.location.assign('http://localhost:8080/token')
   }
 
   return(
     <div id='LoginPage' className='flex h-screen w-screen justify-center items-center relative bg-black'>
       <Image
         src={BG}
+        placeholder='blur'
         alt='background image'
         className='absolute object-cover z-0 w-full h-full animate-fade-in'
       />
